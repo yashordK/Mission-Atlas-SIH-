@@ -1,27 +1,46 @@
 // app/index.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
 // Import images
 import logo from '../assets/images/icon.jpg';
 import locationBg from '../assets/images/locationBg.png';
-import loc1 from '../assets/images/loc1.png'; // dummy images
+import loc1 from '../assets/images/loc1.png'; 
 import loc2 from '../assets/images/loc2.png';
 import loc3 from '../assets/images/loc3.png';
 
 const Home = () => {
+    const [city, setCity] = useState<string>('Fetching location...');
+
+    useEffect(() => {
+        (async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setCity('Permission denied');
+                return;
+            }
+
+            let loc = await Location.getCurrentPositionAsync({});
+            let reverseGeo = await Location.reverseGeocodeAsync({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+            });
+
+            if (reverseGeo.length > 0) {
+                const { city, district, region } = reverseGeo[0];
+                setCity(city || district || region || "Unknown Location");
+            }
+        })();
+    }, []);
+
     const locations = [
         { id: 1, name: 'Shillong Peak', distance: '5.2 km', image: loc1 },
         { id: 2, name: 'Kaziranga National Park', distance: '42 km', image: loc2 },
         { id: 3, name: 'Majuli Island', distance: '15 km', image: loc3 },
-        // { id: 4, name: 'Cherrapunji', distance: '60 km', image: loc1 },
-        // { id: 5, name: 'Tawang Monastery', distance: '120 km', image: loc2 },
-        // { id: 6, name: 'Manas National Park', distance: '85 km', image: loc3 },
-        // { id: 7, name: 'Dzukou Valley', distance: '30 km', image: loc1 },
-        // { id: 8, name: 'Loktak Lake', distance: '75 km', image: loc2 },
     ];
 
     return (
@@ -49,7 +68,7 @@ const Home = () => {
                 />
                 <View style={styles.cardContent}>
                     <Text style={styles.welcomeText}>Welcome Back!</Text>
-                    <Text style={styles.locationText}>North-East Region</Text>
+                    <Text style={styles.locationText}>{city}</Text>
                 </View>
             </ImageBackground>
 
@@ -80,10 +99,6 @@ const Home = () => {
                     <Ionicons name="shield-checkmark-outline" size={24} color="#007AFF" />
                     <Text style={styles.serviceText}>Police Station (2.3 km)</Text>
                 </View>
-                {/* <View style={styles.serviceRow}>
-                    <MaterialIcons name="local-fire-department" size={24} color="red" />
-                    <Text style={styles.serviceText}>Fire Brigade (4.1 km)</Text>
-                </View> */}
                 <View style={styles.serviceRow}>
                     <Ionicons name="medkit-outline" size={24} color="green" />
                     <Text style={styles.serviceText}>Hospital (1.8 km)</Text>
@@ -108,7 +123,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 20,
         backgroundColor: '#fff',
-        boxShadow: '0 4px 4px rgba(90, 91, 88, 0.86)',
         padding: 12,
         borderRadius: 12,
         shadowColor: '#000',
@@ -144,7 +158,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     welcomeText: {
-        fontSize: 20,
+        fontSize: 50,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 6,
