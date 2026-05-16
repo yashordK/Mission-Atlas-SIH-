@@ -39,3 +39,13 @@ app/.env
 app/.env.local
 server/.env
 server/.env.local
+
+# Android
+AndroidApp/local.properties
+AndroidApp/.gradle/
+AndroidApp/app/build/
+AndroidApp/build/
+AndroidApp/*.apk
+AndroidApp/*.aab
+AndroidApp/.idea/
+AndroidApp/**/*.iml

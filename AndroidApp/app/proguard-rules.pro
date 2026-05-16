@@ -1,0 +1,4 @@
+-keep class com.missionatlas.sevenshield.data.model.** { *; }
+-keepclassmembers class * { @kotlinx.serialization.SerialName *; }
+-keep @kotlinx.serialization.Serializable class * { *; }
+-dontwarn io.github.jan.supabase.**

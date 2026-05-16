@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mission Atlas</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_map">Map</string>
+    <string name="tab_sos">SOS</string>
+    <string name="tab_profile">Profile</string>
+    <string name="tab_info">Info</string>
+    <string name="sos_hold_instruction">Hold 3 seconds to activate emergency alert</string>
+    <string name="sos_sent">SOS Alert Sent — Help is on the way</string>
+    <string name="call_112">Call 112</string>
+    <string name="call_108">Ambulance 108</string>
+</resources>
