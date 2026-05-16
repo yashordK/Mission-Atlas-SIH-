@@ -1,6 +1,6 @@
 # Mission Atlas 🗺️
 
-> **SIH 2025 | Problem Statement SIH25137 | Team ID: 79460**  
+> **SIH 2025 | Problem Statement SIH25137 | Team ID: 79460**
 > *Swadeshi for Atmanirbhar Bharat - Travel & Tourism*
 
 ---
@@ -18,7 +18,7 @@ The platform directly supports the **Atmanirbhar Bharat** vision by prioritizing
 Mission Atlas is built around seven core pillars:
 
 | Shield | Description |
-|--------|-------------|
+| ------ | ----------- |
 | 🗺️ **Offline Maps** | Navigate without internet - reliable access even in remote areas |
 | 🤖 **AI Itinerary** | Personalized travel plans with eco-friendly route suggestions |
 | 🔗 **Blockchain ID** | Tamper-proof tourist identity for secure hotel check-ins and bookings |
@@ -32,21 +32,26 @@ Mission Atlas is built around seven core pillars:
 ## Tech Stack
 
 ### Web Frontend
+
 - **Vite + React + TypeScript**
 - **Tailwind CSS**
 
 ### Mobile App
+
 - **Expo (React Native)**
 
 ### Backend & APIs
+
 - **Node.js / Express**
 - **Python** (AI/ML services)
 
 ### Blockchain
+
 - **Ethereum** (MetaMask, Ethers.js, Web3.js, Solidity)
 - Used for: transparent, tamper-proof tourist identity verification and secure booking transactions
 
 ### Database & Cloud
+
 - **Supabase** (PostgreSQL + Auth + Realtime)
 
 ---
@@ -64,36 +69,58 @@ India's tourism industry contributes significantly to GDP, yet travelers consist
 
 ## Project Structure
 
-```
-Mission-Atlas-SIH/
-├── src/                  # Web app (Vite + React + TypeScript)
-├── MobileApp/            # Expo mobile app (React Native)
-├── blockchainConfig.js   # Ethereum / Web3 configuration
-├── tailwind.config.js
-├── vite.config.ts
-└── package.json
+```text
+tourist-safety-app/
+├── app/                        # Expo + React Native mobile app (tourist-facing)
+│   ├── app/                    # Expo Router screens
+│   │   ├── _layout.tsx         # Root layout + tab navigation
+│   │   ├── index.tsx           # Home screen (NE India destinations)
+│   │   ├── map.tsx             # Live heatmap
+│   │   ├── sos.tsx             # Panic / SOS button
+│   │   ├── profile.tsx         # Tourist profile + Digital ID
+│   │   └── info.tsx            # Info & chatbot
+│   ├── components/
+│   │   └── FooterTabs.tsx      # Bottom tab bar
+│   ├── assets/
+│   ├── package.json
+│   └── app.json
+├── dashboard/                  # Vite + React + TypeScript admin web dashboard
+│   ├── src/
+│   │   ├── components/         # LiveMap, IncidentForm, NotificationPanel, …
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tailwind.config.js
+├── shared/
+│   └── blockchainConfig.js     # Polygon contract address + ABI (shared)
+├── .gitignore
+└── README.md
 ```
 
 ---
 
 ## Getting Started
 
-### Web App
+### Web Dashboard Setup
 
 ```bash
+cd dashboard
 npm install
 npm run dev
 ```
 
-### Mobile App
+### Mobile App Setup
 
 ```bash
-cd MobileApp
+cd app
 npm install
 npx expo start
 ```
 
 Then open in:
+
 - **Expo Go** (scan QR code)
 - **Android Emulator**
 - **iOS Simulator**
@@ -102,11 +129,11 @@ Then open in:
 
 ## Team
 
-**Team Name:** Mission Atlas  
-**Team ID:** 79460  
-**Hackathon:** Smart India Hackathon 2025  
-**Theme:** Travel & Tourism  
-**PS Category:** Software  
+**Team Name:** Mission Atlas
+**Team ID:** 79460
+**Hackathon:** Smart India Hackathon 2025
+**Theme:** Travel & Tourism
+**PS Category:** Software
 **Problem Statement ID:** SIH25137
 
 ---
