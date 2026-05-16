@@ -2,47 +2,44 @@ package com.missionatlas.sevenshield.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Mission Atlas brand palette
-val AtlasBlue       = Color(0xFF2563EB)   // Tailwind blue-600 — matches dashboard primary
-val AtlasBlueLight  = Color(0xFF93C5FD)   // Tailwind blue-300 — dark theme primary
-val AtlasBlueDark   = Color(0xFF1D4ED8)   // Tailwind blue-700
+val Black900        = Color(0xFF000000)
+val Black800        = Color(0xFF0A0A0A)
+val Black700        = Color(0xFF111111)
+val Black600        = Color(0xFF1A1A1A)
+val Black500        = Color(0xFF222222)
+val SurfaceDark     = Color(0xFF141414)
+val SurfaceElevated = Color(0xFF1C1C1C)
+val SurfaceBorder   = Color(0xFF2A2A2A)
 
-val AtlasGreen      = Color(0xFF16A34A)   // Tailwind green-600
-val AtlasGreenDark  = Color(0xFF15803D)   // Tailwind green-700
+val ElectricBlue      = Color(0xFF2563EB)
+val ElectricBlueLight = Color(0xFF3B82F6)
+val ElectricBlueDim   = Color(0xFF1D4ED8)
+val BlueGlow          = Color(0x332563EB)
 
-val AtlasRed        = Color(0xFFDC2626)   // Tailwind red-600 — matches dashboard error
-val AtlasRedDark    = Color(0xFFB91C1C)   // Tailwind red-700
-val AtlasOrange     = Color(0xFFF97316)   // Tailwind orange-500
+val EmergencyRed      = Color(0xFFDC2626)
+val EmergencyRedBright = Color(0xFFEF4444)
+val EmergencyRedGlow  = Color(0x66DC2626)
 
-val AtlasDarkBg     = Color(0xFF0D0D0D)
-val AtlasDarkSurface = Color(0xFF1A1A2E)
-val AtlasCardDark   = Color(0xFF16213E)
+val SafeGreen         = Color(0xFF16A34A)
+val WarningAmber      = Color(0xFFD97706)
 
-// Light scheme seeds
-val LightPrimary    = AtlasBlue
-val LightOnPrimary  = Color.White
-val LightBackground = Color(0xFFF5F7FA)
-val LightSurface    = Color.White
-val LightOnSurface  = Color(0xFF1C1C1E)
-val LightSecondary  = AtlasGreen
-val LightError      = AtlasRed
+val TextPrimary       = Color(0xFFFFFFFF)
+val TextSecondary     = Color(0xFF9CA3AF)
+val TextTertiary      = Color(0xFF4B5563)
 
-// Dark scheme seeds
-val DarkPrimary     = AtlasBlueLight
-val DarkOnPrimary   = Color(0xFF001E3C)
-val DarkBackground  = Color(0xFF0D0D0D)
-val DarkSurface     = Color(0xFF1A1A2E)
-val DarkOnSurface   = Color(0xFFE8EAED)
-val DarkSecondary   = AtlasGreen
-val DarkError       = AtlasRed
+val LightBackground   = Color(0xFFF8FAFC)
+val LightSurface      = Color(0xFFFFFFFF)
+val LightBorder       = Color(0xFFE2E8F0)
+val LightTextPrimary  = Color(0xFF0F172A)
+val LightTextSecondary = Color(0xFF64748B)
 
-// State-specific gradient pairs [start, end]
+// State gradient pairs (start, end)
 val StateColors = mapOf(
-    "Arunachal Pradesh" to Pair(Color(0xFF1A3A5C), Color(0xFF2D7DD2)),
-    "Assam"             to Pair(Color(0xFF1A5C2A), Color(0xFF2DD27D)),
-    "Manipur"           to Pair(Color(0xFF4A1A5C), Color(0xFF8A2BE2)),
-    "Meghalaya"         to Pair(Color(0xFF1A2A3C), Color(0xFF4A7D8A)),
-    "Mizoram"           to Pair(Color(0xFF5C2A1A), Color(0xFFD2552D)),
-    "Nagaland"          to Pair(Color(0xFF1A3C1A), Color(0xFF2D8A4A)),
-    "Tripura"           to Pair(Color(0xFF1A3C3C), Color(0xFF2D8A8A)),
+    "Arunachal Pradesh" to Pair(Color(0xFF1A3A5C), Color(0xFF2563EB)),
+    "Assam"             to Pair(Color(0xFF1A5C2A), Color(0xFF16A34A)),
+    "Manipur"           to Pair(Color(0xFF4A1A5C), Color(0xFF7C3AED)),
+    "Meghalaya"         to Pair(Color(0xFF1A2A3C), Color(0xFF0891B2)),
+    "Mizoram"           to Pair(Color(0xFF5C2A1A), Color(0xFFEA580C)),
+    "Nagaland"          to Pair(Color(0xFF1A3C1A), Color(0xFF15803D)),
+    "Tripura"           to Pair(Color(0xFF1A3C3C), Color(0xFF0E7490)),
 )

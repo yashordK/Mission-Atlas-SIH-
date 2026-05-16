@@ -1,4 +1,3 @@
-// src/components/PanicButton.tsx
 import React from 'react';
 
 interface PanicButtonProps {
@@ -7,12 +6,35 @@ interface PanicButtonProps {
 
 const PanicButton: React.FC<PanicButtonProps> = ({ onPanic }) => {
   return (
-    <button 
-      className="fixed bottom-6 right-6 bg-red-600 text-white w-16 h-16 rounded-full shadow-lg hover:bg-red-700 active:scale-95 transition-transform duration-200 flex items-center justify-center text-lg font-bold z-50"
+    <button
       onClick={() => onPanic({ lat: 26.1445, lng: 91.7362 })}
-      title="Emergency Panic Button"
+      title="Emergency Panic Button — activates SOS"
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        width: '64px',
+        height: '64px',
+        borderRadius: '50%',
+        backgroundColor: '#DC2626',
+        border: 'none',
+        cursor: 'pointer',
+        animation: 'panic-pulse 2s infinite',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        color: 'white',
+        fontWeight: 700,
+        fontSize: '11px',
+        letterSpacing: '0.5px',
+        flexDirection: 'column' as const,
+        gap: '2px',
+        boxShadow: '0 4px 24px rgba(220,38,38,0.4)',
+      }}
     >
-      PANIC
+      <span style={{ fontSize: '20px', lineHeight: 1 }}>🚨</span>
+      <span>SOS</span>
     </button>
   );
 };

@@ -215,19 +215,28 @@ function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div style={{ minHeight: '100vh', backgroundColor: '#000000' }}>
         <TopBar userName="Admin" />
 
         {/* Error banner */}
         {error && (
-          <div className="fixed top-16 left-0 right-0 z-30 bg-red-100 border-b border-red-300 text-red-800 text-sm px-4 py-2 flex justify-between items-center">
+          <div style={{
+            position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 30,
+            backgroundColor: 'rgba(220,38,38,0.1)', borderBottom: '1px solid #DC2626',
+            color: '#EF4444', fontSize: '13px', padding: '10px 20px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
             <span>⚠ {error}</span>
-            <button onClick={loadData} className="ml-4 text-red-600 underline text-xs">Retry</button>
+            <button onClick={loadData} style={{ marginLeft: '12px', color: '#EF4444', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>Retry</button>
           </div>
         )}
 
         {/* Sidebar */}
-        <div className="fixed top-16 left-0 bottom-0 w-96 overflow-y-auto bg-white shadow-lg z-10">
+        <div style={{
+          position: 'fixed', top: '64px', left: 0, bottom: 0, width: '384px',
+          overflowY: 'auto', backgroundColor: '#141414',
+          borderRight: '1px solid #2A2A2A', zIndex: 10,
+        }}>
           <Sidebar
             notifications={notifications}
             onMarkAsRead={id => setNotifications(n => n.map(nf => nf.id === id ? { ...nf, read: true } : nf))}
@@ -237,26 +246,30 @@ function App() {
         </div>
 
         {/* Main content */}
-        <main className="pt-16 pl-96 h-screen overflow-auto p-4">
+        <main style={{ paddingTop: '64px', paddingLeft: '384px', height: '100vh', overflowY: 'auto', padding: '80px 16px 16px 400px' }}>
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3" />
-                <p className="text-sm">Loading live data…</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '40px', height: '40px', border: '2px solid #2A2A2A',
+                  borderTopColor: '#2563EB', borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite', margin: '0 auto 12px',
+                }} />
+                <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Loading live data…</p>
               </div>
             </div>
           ) : (
             <>
               <SafetyScore score={averageSafetyScore} />
-              <div className="flex items-center gap-4 mt-3 mb-1 text-sm text-gray-500">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px', marginBottom: '4px', fontSize: '13px', color: '#9CA3AF' }}>
                 <span>{tourists.length} tourists tracked</span>
                 <span>{incidents.filter(i => i.status === 'active').length} active incidents</span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#16A34A', display: 'inline-block' }} />
                   Live
                 </span>
               </div>
-              <div className="h-[500px] w-full mt-2">
+              <div style={{ height: '500px', width: '100%', marginTop: '8px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #2A2A2A' }}>
                 <LiveMap tourists={tourists} incidents={incidents} />
               </div>
             </>

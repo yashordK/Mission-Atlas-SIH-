@@ -61,4 +61,27 @@ Format clearly with Day headings."""
         groqResponse.choices.firstOrNull()?.message?.content
             ?: error("Empty response from Groq")
     }
+
+    suspend fun chat(systemPrompt: String, userMessage: String): String =
+        runCatching {
+            val response = httpClient.post(GROQ_URL) {
+                header("Authorization", "Bearer $apiKey")
+                contentType(ContentType.Application.Json)
+                setBody(
+                    GroqRequest(
+                        model = MODEL,
+                        messages = listOf(
+                            GroqMessage(role = "system", content = systemPrompt),
+                            GroqMessage(role = "user",   content = userMessage),
+                        ),
+                        maxTokens = 300,
+                        temperature = 0.7,
+                    )
+                )
+            }
+            response.body<GroqResponse>().choices.firstOrNull()?.message?.content
+                ?: "I couldn't generate a response. Please try again."
+        }.getOrElse { err ->
+            "Sorry, I'm having trouble connecting right now. Please check your connection and try again."
+        }
 }

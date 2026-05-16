@@ -1,6 +1,8 @@
 package com.missionatlas.sevenshield.ui.screens.profile
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -8,161 +10,228 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.missionatlas.sevenshield.ui.theme.AtlasBlue
-import com.missionatlas.sevenshield.ui.theme.AtlasRed
+import com.missionatlas.sevenshield.ui.theme.*
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
     val profile by viewModel.profile.collectAsState()
 
+    // Shimmer animation for Digital ID card
+    val shimmer = rememberInfiniteTransition(label = "shimmer")
+    val shimmerX by shimmer.animateFloat(
+        initialValue = -1f, targetValue = 2f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
+        label = "shimmerX",
+    )
+    val borderAlpha by shimmer.animateFloat(
+        0.4f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), "borderAlpha"
+    )
+
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().background(Black900),
+        contentPadding = PaddingValues(bottom = 24.dp),
     ) {
-        // Avatar + name header
+        // ── Header ─────────────────────────────────────────────────────────────
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(ElectricBlueDim, Black700, Black900),
+                            start = Offset(0f, 0f),
+                            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+                        )
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                Column(
-                    modifier = Modifier
-                        .background(Brush.verticalGradient(listOf(AtlasBlue.copy(alpha = 0.08f), Color.Transparent)))
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 20.dp)) {
+                    // Avatar
                     Box(
                         modifier = Modifier
-                            .size(88.dp)
+                            .size(72.dp)
                             .clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(AtlasBlue, Color(0xFF0051D6)))),
+                            .background(SurfaceElevated)
+                            .border(2.dp, ElectricBlue, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Filled.Person, null, tint = ElectricBlue, modifier = Modifier.size(40.dp))
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
                         profile.name.ifBlank { "Tourist" },
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextPrimary,
                         fontWeight = FontWeight.Bold,
                     )
                     if (profile.email.isNotBlank()) {
-                        Text(profile.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(profile.email, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                     }
-                    if (profile.phone.isNotBlank()) {
-                        Text(profile.phone, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    // Stats row
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Black900.copy(alpha = 0.5f))
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    ) {
+                        ProfileStat("Nationality", profile.nationality.ifBlank { "—" })
+                        Box(Modifier.width(1.dp).height(32.dp).background(SurfaceBorder))
+                        ProfileStat("Status", if (profile.walletAddress != null) "Verified" else "Guest")
+                        Box(Modifier.width(1.dp).height(32.dp).background(SurfaceBorder))
+                        ProfileStat("Chain", "Amoy")
                     }
-                    Spacer(Modifier.height(8.dp))
-                    // Digital ID chip
-                    SuggestionChip(
-                        onClick = {},
-                        label = { Text(if (profile.blockchainId != null) "ID: ${profile.blockchainId!!.take(12)}…" else "Blockchain ID: Not registered") },
-                        icon = { Icon(Icons.Filled.Link, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                }
+            }
+        }
+
+        // ── Digital ID card (shimmer border) ───────────────────────────────────
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .border(
+                        width = 1.dp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                ElectricBlue.copy(alpha = borderAlpha),
+                                ElectricBlueDim.copy(alpha = 0.2f),
+                                ElectricBlue.copy(alpha = borderAlpha),
+                            ),
+                            start = Offset(shimmerX * 500f, 0f),
+                            end = Offset(shimmerX * 500f + 400f, 200f),
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(SurfaceElevated)
+                    .padding(16.dp),
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Security, null, tint = ElectricBlue, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Blockchain Digital ID", style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    DarkProfileRow("Network", "Polygon Amoy Testnet")
+                    DarkProfileRow("Chain ID", "80002")
+                    DarkProfileRow(
+                        "Status",
+                        if (profile.walletAddress != null) "✓ Registered" else "Not connected",
+                        valueColor = if (profile.walletAddress != null) SafeGreen else TextTertiary,
+                    )
+                    if (profile.blockchainId != null) {
+                        DarkProfileRow("ID", "${profile.blockchainId!!.take(14)}…")
+                    }
+                    if (profile.walletAddress != null) {
+                        DarkProfileRow("Wallet", "${profile.walletAddress!!.take(12)}…")
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Verified on Polygon Amoy",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SafeGreen,
+                        fontSize = 11.sp,
                     )
                 }
             }
         }
 
-        // Personal info
+        // ── Sections ───────────────────────────────────────────────────────────
         item {
-            ProfileSection(title = "Personal Information", icon = Icons.Filled.Person) {
-                ProfileRow("Nationality", profile.nationality.ifBlank { "Not set" })
-                ProfileRow("Blood Group", profile.bloodGroup.ifBlank { "Not set" })
+            DarkProfileSection("Personal Information", Icons.Filled.Person) {
+                DarkProfileRow("Nationality", profile.nationality.ifBlank { "—" })
+                DarkProfileRow("Blood Group", profile.bloodGroup.ifBlank { "—" })
             }
         }
 
-        // Emergency contact
         item {
-            ProfileSection(title = "Emergency Contact", icon = Icons.Filled.Warning) {
-                ProfileRow("Name", profile.emergencyContactName.ifBlank { "Not set" })
-                ProfileRow("Phone", profile.emergencyContactPhone.ifBlank { "Not set" })
+            DarkProfileSection("Emergency Contact", Icons.Filled.Warning) {
+                DarkProfileRow("Name",  profile.emergencyContactName.ifBlank { "—" })
+                DarkProfileRow("Phone", profile.emergencyContactPhone.ifBlank { "—" })
             }
         }
 
-        // Blockchain ID
         item {
-            ProfileSection(title = "Blockchain Digital ID", icon = Icons.Filled.Security) {
-                ProfileRow("Network", "Polygon Amoy Testnet")
-                ProfileRow("Chain ID", "80002")
-                ProfileRow("Status", if (profile.walletAddress != null) "Registered" else "Not connected")
-                if (profile.walletAddress != null) {
-                    ProfileRow("Wallet", "${profile.walletAddress!!.take(10)}…")
-                }
+            DarkProfileSection("Security", Icons.Filled.Lock) {
+                DarkProfileRow("Two-Factor Auth", "Disabled")
+                DarkProfileRow("Account", if (profile.walletAddress != null) "Authenticated" else "Guest")
             }
         }
 
-        // Security
         item {
-            ProfileSection(title = "Security", icon = Icons.Filled.Lock) {
-                ProfileRow("Two-Factor Auth", "Disabled")
-                ProfileRow("Account", "Guest")
-            }
-        }
-
-        // Logout
-        item {
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {},
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AtlasRed),
+                colors = ButtonDefaults.buttonColors(containerColor = EmergencyRed),
             ) {
-                Icon(Icons.Filled.ExitToApp, contentDescription = null)
+                Icon(Icons.Filled.ExitToApp, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Sign Out")
             }
         }
-
-        item { Spacer(Modifier.height(8.dp)) }
     }
 }
 
 @Composable
-private fun ProfileSection(
-    title: String,
-    icon: ImageVector,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
+private fun ProfileStat(label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 16.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            content()
-        }
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = TextTertiary, fontSize = 10.sp)
     }
 }
 
 @Composable
-private fun ProfileRow(label: String, value: String) {
+private fun DarkProfileSection(title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceElevated)
+            .border(1.dp, SurfaceBorder, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = ElectricBlue, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.height(4.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(SurfaceBorder))
+        Spacer(Modifier.height(8.dp))
+        content()
+    }
+}
+
+@Composable
+private fun DarkProfileRow(label: String, value: String, valueColor: Color = TextPrimary) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor, fontWeight = FontWeight.Medium)
     }
 }

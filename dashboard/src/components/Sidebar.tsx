@@ -1,4 +1,3 @@
-// src/components/Sidebar.tsx
 import React, { useState } from 'react';
 import { Notification, Incident } from '../types';
 
@@ -9,163 +8,142 @@ interface SidebarProps {
   onAddIncident: (incidentData: Omit<Incident, 'id' | 'timestamp'>) => void;
 }
 
+const severityLeftBorder = (severity: string): string => {
+  switch (severity) {
+    case 'high':   return '3px solid #DC2626';
+    case 'medium': return '3px solid #D97706';
+    default:       return '3px solid #2563EB';
+  }
+};
+
 const Sidebar: React.FC<SidebarProps> = ({
-  notifications,
-  onMarkAsRead,
-  onDismissNotification,
-  onAddIncident
+  notifications, onMarkAsRead, onDismissNotification, onAddIncident,
 }) => {
   const [newIncident, setNewIncident] = useState<Omit<Incident, 'id' | 'timestamp'>>({
-    title: '',
-    description: '',
-    severity: 'low',
-    type: 'warning',
-    location: { lat: 0, lng: 0 },
-    reportedBy: '',
-    status: 'active'
+    title: '', description: '', severity: 'low', type: 'warning',
+    location: { lat: 26.1445, lng: 91.7362 }, reportedBy: '', status: 'active',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAddIncident(newIncident);
-    // Reset the form
     setNewIncident({
-      title: '',
-      description: '',
-      severity: 'low',
-      type: 'warning',
-      location: { lat: 0, lng: 0 },
-      reportedBy: '',
-      status: 'active'
+      title: '', description: '', severity: 'low', type: 'warning',
+      location: { lat: 26.1445, lng: 91.7362 }, reportedBy: '', status: 'active',
     });
   };
 
-  // Map severity to gradient backgrounds
-  const severityBg = (severity: 'high' | 'medium' | 'low') => {
-    switch (severity) {
-      case 'high':
-        return 'bg-gradient-to-r from-red-600 to-red-400 text-white';
-      case 'medium':
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-200 text-gray-800';
-      case 'low':
-        return 'bg-gradient-to-r from-blue-500 to-blue-300 text-white';
-      default:
-        return 'bg-gray-100';
-    }
+  const inputStyle: React.CSSProperties = {
+    backgroundColor: '#1C1C1C', border: '1px solid #2A2A2A', color: '#FFFFFF',
+    borderRadius: '8px', padding: '10px 12px', width: '100%', fontSize: '13px',
+    outline: 'none', transition: 'border-color 0.2s',
   };
 
   return (
-    <div className="p-4 flex flex-col space-y-6 h-full overflow-y-auto bg-white shadow-lg">
-      <h2 className="font-bold text-2xl mb-2">Notifications</h2>
+    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto' }}>
 
-      {/* Notification List */}
-      <ul className="space-y-3">
-        {notifications.map(n => (
-          <li
-            key={n.id}
-            className={`p-3 rounded-lg shadow ${n.read ? 'bg-gray-100' : 'bg-white'}`}
-          >
-            <p className="font-semibold">{n.title}</p>
-            <p className="text-sm text-gray-600">{n.message}</p>
-            <div className="mt-2 flex gap-2">
-              {!n.read && (
-                <button
-                  className="text-blue-500 text-xs hover:underline"
-                  onClick={() => onMarkAsRead(n.id)}
-                >
-                  Mark as read
-                </button>
-              )}
-              <button
-                className="text-red-500 text-xs hover:underline"
-                onClick={() => onDismissNotification(n.id)}
-              >
-                Dismiss
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {/* Notifications */}
+      <div>
+        <p style={{ color: '#4B5563', fontSize: '11px', letterSpacing: '2px', fontWeight: 600, textTransform: 'uppercase', marginBottom: '10px' }}>
+          Notifications
+        </p>
+        {notifications.length === 0 ? (
+          <p style={{ color: '#4B5563', fontSize: '13px' }}>No active alerts</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {notifications.map(n => {
+              const isPanic = n.title.includes('PANIC') || n.title.includes('SOS');
+              return (
+                <div key={n.id} style={{
+                  backgroundColor: isPanic ? 'rgba(220,38,38,0.07)' : (n.read ? '#141414' : '#1C1C1C'),
+                  border: isPanic ? '1px solid rgba(220,38,38,0.3)' : '1px solid #2A2A2A',
+                  borderLeft: severityLeftBorder(isPanic ? 'high' : 'low'),
+                  borderRadius: '12px', padding: '12px',
+                }}>
+                  <p style={{ fontWeight: 600, fontSize: '13px', color: isPanic ? '#EF4444' : '#FFFFFF', marginBottom: '3px' }}>{n.title}</p>
+                  <p style={{ fontSize: '12px', color: '#9CA3AF', lineHeight: 1.5, marginBottom: '6px' }}>{n.message}</p>
+                  {n.title.includes('SIMULATED_HASH') && (
+                    <p style={{ fontFamily: 'monospace', color: '#4B5563', fontSize: '11px', marginBottom: '4px', wordBreak: 'break-all' }}>
+                      {n.message.match(/0x[a-fA-F0-9]+/)?.[0] ?? ''}
+                    </p>
+                  )}
+                  <p style={{ color: '#4B5563', fontSize: '11px', marginBottom: '6px' }}>
+                    {new Date(n.timestamp).toLocaleTimeString()}
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {!n.read && (
+                      <button onClick={() => onMarkAsRead(n.id)}
+                        style={{ color: '#2563EB', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        Mark read
+                      </button>
+                    )}
+                    <button onClick={() => onDismissNotification(n.id)}
+                      style={{ color: '#DC2626', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      <hr className="my-4 border-gray-300" />
+      <div style={{ borderTop: '1px solid #2A2A2A' }} />
 
       {/* Add Incident Form */}
       <div>
-        <h3 className="font-bold text-lg mb-2">Add Incident</h3>
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
-          <input
-            type="text"
-            placeholder="Title"
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+        <p style={{ color: '#4B5563', fontSize: '11px', letterSpacing: '2px', fontWeight: 600, textTransform: 'uppercase', marginBottom: '10px' }}>
+          Add Incident
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <input type="text" placeholder="Title" required style={inputStyle}
             value={newIncident.title}
             onChange={e => setNewIncident({ ...newIncident, title: e.target.value })}
-            required
+            onFocus={e => e.target.style.borderColor = '#2563EB'}
+            onBlur={e => e.target.style.borderColor = '#2A2A2A'}
           />
-          <input
-            type="text"
-            placeholder="Description"
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          <input type="text" placeholder="Description" style={inputStyle}
             value={newIncident.description}
             onChange={e => setNewIncident({ ...newIncident, description: e.target.value })}
-            required
+            onFocus={e => e.target.style.borderColor = '#2563EB'}
+            onBlur={e => e.target.style.borderColor = '#2A2A2A'}
           />
-          <select
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={newIncident.severity}
-            onChange={e => setNewIncident({ ...newIncident, severity: e.target.value as 'high' | 'medium' | 'low' })}
-            required
-          >
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+          <select style={inputStyle} value={newIncident.severity}
+            onChange={e => setNewIncident({ ...newIncident, severity: e.target.value as Incident['severity'] })}>
+            <option value="low">Low Severity</option>
+            <option value="medium">Medium Severity</option>
+            <option value="high">High Severity</option>
           </select>
-          <select
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={newIncident.type}
-            onChange={e => setNewIncident({ ...newIncident, type: e.target.value as 'emergency' | 'warning' })}
-            required
-          >
-            <option value="emergency">Emergency</option>
+          <select style={inputStyle} value={newIncident.type}
+            onChange={e => setNewIncident({ ...newIncident, type: e.target.value as Incident['type'] })}>
             <option value="warning">Warning</option>
+            <option value="emergency">Emergency</option>
+            <option value="info">Info</option>
           </select>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              placeholder="Latitude"
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 w-1/2"
-              value={newIncident.location.lat}
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <input type="number" placeholder="Latitude" required style={{ ...inputStyle, flex: 1 }}
+              value={newIncident.location.lat || ''}
               onChange={e => setNewIncident({ ...newIncident, location: { ...newIncident.location, lat: Number(e.target.value) } })}
-              required
             />
-            <input
-              type="number"
-              placeholder="Longitude"
-              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 w-1/2"
-              value={newIncident.location.lng}
+            <input type="number" placeholder="Longitude" required style={{ ...inputStyle, flex: 1 }}
+              value={newIncident.location.lng || ''}
               onChange={e => setNewIncident({ ...newIncident, location: { ...newIncident.location, lng: Number(e.target.value) } })}
-              required
             />
           </div>
-          <input
-            type="text"
-            placeholder="Reported By"
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          <input type="text" placeholder="Reported By" style={inputStyle}
             value={newIncident.reportedBy}
             onChange={e => setNewIncident({ ...newIncident, reportedBy: e.target.value })}
-            required
+            onFocus={e => e.target.style.borderColor = '#2563EB'}
+            onBlur={e => e.target.style.borderColor = '#2A2A2A'}
           />
-          <select
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={newIncident.status}
-            onChange={e => setNewIncident({ ...newIncident, status: e.target.value as 'active' | 'resolved' })}
-            required
-          >
-            <option value="active">Active</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <button
-            type="submit"
-            className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+          <button type="submit" style={{
+            backgroundColor: '#2563EB', color: 'white', borderRadius: '12px',
+            width: '100%', padding: '12px', border: 'none', cursor: 'pointer',
+            fontSize: '13px', fontWeight: 600, transition: 'background-color 0.2s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1D4ED8')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563EB')}
           >
             Add Incident
           </button>
