@@ -15,7 +15,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onAddIncident }) => {
     title: '',
     description: '',
     severity: 'medium' as const,
-    location: { lat: 40.7128, lng: -74.0060 },
+    location: { lat: 26.1445, lng: 91.7362 },
     reportedBy: 'Authority',
     status: 'active' as const
   });
@@ -29,7 +29,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onAddIncident }) => {
         title: '',
         description: '',
         severity: 'medium',
-        location: { lat: 40.7128, lng: -74.0060 },
+        location: { lat: 26.1445, lng: 91.7362 },
         reportedBy: 'Authority',
         status: 'active'
       });

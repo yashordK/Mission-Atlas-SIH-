@@ -42,7 +42,7 @@ router.get('/', async (_req, res) => {
     : 100;
 
   // Breakdown by NE India state
-  const stateBreakdown: Record<string, { incidents: number; score: number }> = {};
+  const stateBreakdown = {};
   const NE_STATES = ['Arunachal Pradesh', 'Assam', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Tripura'];
   for (const state of NE_STATES) {
     const stateTourists = tourists.filter(t => t.current_state === state);

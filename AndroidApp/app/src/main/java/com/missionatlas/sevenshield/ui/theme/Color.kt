@@ -3,16 +3,16 @@ package com.missionatlas.sevenshield.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Mission Atlas brand palette
-val AtlasBlue       = Color(0xFF007AFF)
-val AtlasBlueLight  = Color(0xFF5AC8FA)
-val AtlasBlueDark   = Color(0xFF0051D6)
+val AtlasBlue       = Color(0xFF2563EB)   // Tailwind blue-600 — matches dashboard primary
+val AtlasBlueLight  = Color(0xFF93C5FD)   // Tailwind blue-300 — dark theme primary
+val AtlasBlueDark   = Color(0xFF1D4ED8)   // Tailwind blue-700
 
-val AtlasGreen      = Color(0xFF34C759)
-val AtlasGreenDark  = Color(0xFF248A3D)
+val AtlasGreen      = Color(0xFF16A34A)   // Tailwind green-600
+val AtlasGreenDark  = Color(0xFF15803D)   // Tailwind green-700
 
-val AtlasRed        = Color(0xFFFF3B30)
-val AtlasRedDark    = Color(0xFFCC2200)
-val AtlasOrange     = Color(0xFFFF9500)
+val AtlasRed        = Color(0xFFDC2626)   // Tailwind red-600 — matches dashboard error
+val AtlasRedDark    = Color(0xFFB91C1C)   // Tailwind red-700
+val AtlasOrange     = Color(0xFFF97316)   // Tailwind orange-500
 
 val AtlasDarkBg     = Color(0xFF0D0D0D)
 val AtlasDarkSurface = Color(0xFF1A1A2E)

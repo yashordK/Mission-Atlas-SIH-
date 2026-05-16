@@ -1,156 +1,219 @@
 # Mission Atlas — SevenShield Project Status
 
-> **Audit Date:** 2026-05-16  
-> **Team:** Mission Atlas | **Team ID:** 79460  
-> **Hackathon:** Smart India Hackathon 2025  
-> **Problem Statement:** SIH25137 (README) / SIH25002 (brief) — Smart Tourist Safety Monitoring & Incident Response  
-> **Theme:** Travel & Tourism | NE India focus  
-> **Node.js version:** v22.21.1
+> **Audit Date:** 2026-05-16
+> **Team:** Mission Atlas | **Team ID:** 79460
+> **Hackathon:** Smart India Hackathon 2025 | **Problem:** SIH25002 (README also cites SIH25137)
+> **Theme:** Travel & Tourism — Northeast India Safety
 
 ---
 
 ## 1. Project Overview
 
-Mission Atlas / SevenShield is a dual-platform tourist safety system for Northeast India. It consists of:
+Mission Atlas / SevenShield is a multi-platform tourist safety system targeting all 7 Northeast India states. The system provides tourists with AI-generated itineraries, a real-time safety heatmap, hold-to-activate SOS with GPS coordinates pushed to Supabase, a blockchain-backed digital identity on Polygon Amoy testnet (Chain ID 80002, contract `0x33985e0e572b06fd2f8324e853b29ba5e90a86d1`), and static geo-fence data for 14 NE India zones seeded in the database.
 
-- **Web Dashboard** (`/src`): A Vite + React + TypeScript admin/authority dashboard titled "Tourist Safety Dashboard". It renders a live OpenStreetMap map (react-leaflet), a notification/incident sidebar, a safety score widget, and a panic button. All data is currently static mock data — no Supabase connection is active.
-- **Mobile App** (`/MobileApp`): An Expo (React Native) app with five tabs — Home, Map, SOS, Profile, Info. The Home screen displays all 7 NE India states with destination cards, live GPS location, and a 3-step AI itinerary planner powered by Gemini API. The Map tab renders a Leaflet heatmap inside a WebView. The SOS screen is a placeholder. Profile is static hardcoded data. Info is a static help page.
-- **Blockchain Config** (`/bloackchainConfig.js` and `/MobileApp/bloackchainConfig.js`): A deployed Solidity smart contract ABI and address on what appears to be a testnet. The contract supports `registerTourist`, `assignGuide`, `addEvidence`, and read functions. No frontend integration to this contract exists yet.
-- **No backend** (Node.js/Express or Python) exists anywhere in the repository.
-- **No Supabase** client calls exist anywhere in source code — the SDK is installed in the web package but never imported or used.
+The project is structured as a monorepo with four active platforms: an Expo/React Native tourist mobile app (`app/`), a Kotlin + Jetpack Compose native Android app (`AndroidApp/`), a Vite + React + TypeScript admin web dashboard (`dashboard/`), and a Node.js + Express backend (`server/`). All four platforms share a common Supabase PostgreSQL backend (tables: `profiles`, `tourists`, `incidents`, `sos_alerts`, `geofences`). The dashboard consumes Supabase directly with realtime subscriptions. The Android app uses the official Kotlin Supabase client (`io.github.jan-tennert.supabase` BOM 2.1.4). The mobile Expo app uses `@supabase/supabase-js` 2.105.4.
+
+The server (`server/`) acts as a backend-for-frontend proxy, primarily to avoid exposing GROQ API keys on the mobile client. It hosts three routes: `POST /api/itinerary` (GROQ LLaMA-3 itinerary generation), `POST /api/sos` (SOS insert with service-role key bypassing RLS), and `GET /api/safety-score` (computed safety score from active incidents and SOS alerts). The Expo app attempts the server first and falls back to calling GROQ directly using `EXPO_PUBLIC_GROQ_API_KEY`. Both the Expo and Android apps are functionally independent of the server for SOS and Supabase operations.
 
 ---
 
 ## 2. Tech Stack: Planned vs Actual
 
-| Layer | Planned (README/Brief) | Installed / Found | Status |
-|-------|------------------------|-------------------|--------|
-| Frontend Web | Vite + React + TypeScript + Tailwind | Vite 5.4.8, React 18.3.1, TypeScript 5.6.3, Tailwind 3.4.17 | Installed and running |
-| Frontend App | Expo + React Native | Expo 54.0.7, React Native 0.81.4, expo-router 6.0.4 | Installed and running |
-| Backend | Node.js + Express + Python (AI/ML) | **None** — no server/ or backend/ folder exists | Not started |
-| Database | Supabase (PostgreSQL + Auth + Realtime) | `@supabase/supabase-js` 2.57.4 installed (web only) — never imported in any source file | SDK installed, zero integration |
-| Blockchain | Ethereum/Polygon + Solidity + MetaMask + ethers.js | Contract ABI + address in `bloackchainConfig.js` (both root and MobileApp). `ethers` not installed anywhere | Contract defined, no frontend integration |
-| Maps (Web) | Leaflet / react-leaflet | leaflet 1.9.4, react-leaflet 4.2.1 installed and used in `LiveMap.tsx` | Working (OpenStreetMap tiles) |
-| Maps (Mobile) | react-native-maps / MapView | `react-native-maps` 1.20.1 installed but **not used** — map uses Leaflet inside WebView via `react-native-webview` | react-native-maps unused; WebView map works |
-| AI | Python APIs / Gemini Chatbot | Gemini API key hardcoded in `MobileApp/app/index.tsx` line 13 — endpoint URL is **incorrect** (`https://api.gemini.ai/v1/completions` is not a valid Gemini endpoint; correct is `https://generativelanguage.googleapis.com/v1beta/models/...`) | Partially wired, broken endpoint |
-| i18n / Multi-language | NE India languages | `i18next` + `react-i18next` installed as extraneous in MobileApp (not in package.json). Web has custom `translations.ts` with 9 languages — but `LanguageProvider` at `src/components/LanguageProvider.tsx` is a stub that **hardcodes `'en'`** and does not use the `useLanguageProvider` hook | Translations exist, context broken |
+| Layer | Planned (README/SIH PDF) | Installed / Found | Status |
+|-------|--------------------------|-------------------|--------|
+| Mobile frontend | Expo + React Native | expo 54.0.7, react-native 0.81.4, expo-router 6.0.4 | Installed |
+| Mobile maps | Offline Maps | react-native-maps 1.20.1 installed; WebView + Leaflet heatmap used in map.tsx | Partial — no offline tile caching |
+| Mobile AI | AI Itinerary (LLaMA) | groq-sdk via server; direct fetch fallback in index.tsx | Working (requires network) |
+| Mobile auth | Supabase Auth | @supabase/supabase-js 2.105.4 — client exists in app/lib/supabase.ts | Client created, no login UI |
+| Mobile SOS | Panic Button + GPS | expo-location, expo-haptics, supabase insert in sos.tsx | Complete |
+| Mobile blockchain | Polygon Amoy Digital ID | shared/blockchainConfig.js exists, CONTRACT_ABI defined | Config only — no ethers.js, no on-chain calls |
+| Android frontend | Kotlin + Jetpack Compose | compileSdk 34, Compose BOM 2024.02.00, material3 | Installed |
+| Android maps | OSMDroid | osmdroid-android 6.1.18 | Installed, integrated in MapScreen.kt |
+| Android AI | LLaMA via Groq | GroqRepository.kt with Ktor HTTP client | Implemented |
+| Android auth | Supabase Auth | supabase-kt auth-kt module installed in AppModule.kt | Module installed, no login UI |
+| Android SOS | SOS with GPS | SosViewModel.kt with FusedLocationProvider + SupabaseRepository | Complete |
+| Android blockchain | Polygon Digital ID | ProfileViewModel.kt shows blockchainId / walletAddress fields | Data model only — no on-chain calls |
+| Web dashboard | Vite + React + TS | vite 5.4.8, react 18.3.1, typescript 5.6.3 | Installed |
+| Web maps | Leaflet | leaflet 1.9.4, react-leaflet 4.2.1 | Installed, integrated in LiveMap.tsx |
+| Web auth | Supabase Auth | @supabase/supabase-js 2.57.4 | Client created, no admin login |
+| Web realtime | Supabase Realtime | postgres_changes on tourists, incidents, sos_alerts in App.tsx | Implemented |
+| Backend | Node.js + Express | express 4.22.2, cors, dotenv | Implemented |
+| Backend AI | GROQ SDK | groq-sdk 0.9.1 | Implemented in routes/itinerary.js |
+| Backend DB | Supabase (service key) | @supabase/supabase-js 2.105.4 — service key for SOS + safety routes | Implemented |
+| Blockchain | Polygon Amoy | shared/blockchainConfig.js — ABI + contract address | Config only — no Web3/ethers.js library installed anywhere |
+| Database | Supabase PostgreSQL | 2 migrations applied: initial schema + anon SOS policy | Applied |
+| Styling — web | Tailwind CSS v3 | tailwindcss 3.4.17 | Installed (config deleted from root) |
+| Styling — mobile | React Native StyleSheet | Used in all screens | Complete |
+| Styling — Android | Material3 | MissionAtlasTheme with LightColorScheme / DarkColorScheme | Complete |
+| Geo-fencing | Real-time alerts | 14 geofence polygons seeded in DB | DB only — no runtime monitoring |
+| Offline Maps | Download + cache | expo-location exists; no offline tile download implemented | Missing |
+| Swadeshi Booking | Local hotel booking | Not present in any platform | Missing |
+| AI Chatbot | Info screen chatbot | info.tsx has static FAQ; no chatbot UI | Missing |
+| Escalating Alerts | Progressive alert system | Not implemented in any platform | Missing |
+| Python AI/ML | Python services | README mentions Python; no Python code found | Not started |
 
 ---
 
 ## 3. Theme & Design System
 
 ### Web Dashboard
+- Background: `bg-gray-50` (App.tsx line 218), TopBar: `bg-white shadow-md` (TopBar.tsx line 10)
+- Error banner: `bg-red-100 border-red-300 text-red-800` (App.tsx line 223)
+- SafetyScore card: `bg-green-50 border-l-4 border-green-500` (SafetyScore.tsx line 10)
+- PanicButton: `bg-red-600 w-16 h-16 rounded-full fixed bottom-6 right-6` (PanicButton.tsx line 11)
+- Sidebar: `bg-white shadow-lg` fixed left, width `w-96` (App.tsx lines 230-231)
+- Notification severity gradients in Sidebar.tsx lines 46-53: high=`bg-gradient-to-r from-red-600 to-red-400 text-white`, medium=`from-yellow-400 to-yellow-200`, low=`from-blue-500 to-blue-300 text-white`
+- **`dashboard/tailwind.config.js` is deleted** (shown in git status as `D tailwind.config.js`). Tailwind runs on default config only — no content scanning.
+- `LanguageSelector.tsx` supports 9 languages but is NOT rendered in TopBar.tsx or App.tsx — it is unused in the live UI.
+- Translations only cover 7 keys: hello, user, safetyScore, panicButton, addIncident, notifications, fullscreen.
+- `NotificationPanel.tsx` is a stub with hardcoded strings and is NOT imported in App.tsx.
 
-- **Background:** `bg-gray-50` (Tailwind — #f9fafb)
-- **Sidebar/TopBar background:** `bg-white` with `shadow-lg` / `shadow-md`
-- **TopBar height:** `h-16`, fixed position, `z-20`
-- **Sidebar width:** `w-96` (384px), fixed left, starts below TopBar
-- **Primary action color:** `bg-blue-600` / `hover:bg-blue-700` (#2563eb)
-- **Panic button:** `bg-red-600`, `w-16 h-16`, `rounded-full`, `fixed bottom-6 right-6` — **currently commented out** in `App.tsx` line 79
-- **Safety Score widget:** `bg-green-50`, `border-l-4 border-green-500`, text `text-green-700`
-- **Severity colors in Sidebar:** High = `bg-gradient-to-r from-red-600 to-red-400 text-white`, Medium = `from-yellow-400 to-yellow-200`, Low = `from-blue-500 to-blue-300`
-- **Font:** System font stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', ...`) — no custom font loaded
-- **No CSS custom properties / CSS variables** — purely Tailwind utility classes
-- **Tailwind config:** No theme extensions — bare default configuration at `tailwind.config.js`
-- **Title in browser tab:** "React Website with Live Map" (generic placeholder in `index.html`)
+### Mobile App (Expo)
+- Home screen background: `backgroundColor: '#dae0e0'` (index.tsx line 334)
+- Header card: `backgroundColor: '#fff'`, `borderRadius: 12`, `elevation: 3`
+- Location banner: height 150, LinearGradient `rgba(0,0,0,0)` to `rgba(0,0,0,0.7)` (index.tsx lines 339-340)
+- State selection active: `backgroundColor: '#007bff'` (index.tsx line 361)
+- SOS screen background: `backgroundColor: '#0d0d0d'`; SOS button: `backgroundColor: '#FF3B30'`; sent: `#34C759`; error: `#8e0000` (sos.tsx lines 205-217)
+- Tab bar: `backgroundColor: '#121212'`; height: 90 (Android) / 70 (iOS); SOS tab button: `backgroundColor: '#FF3B30'` 70x70 (FooterTabs.tsx lines 79-104)
+- Profile: `backgroundColor: '#f8f8f8'`; cards: `backgroundColor: '#fff'`
+- Info footer card: `backgroundColor: '#007AFF'`
+- Map: WebView with Leaflet heatmap gradient `0.2: "green"`, `0.5: "yellow"`, `0.8: "orange"`, `1.0: "red"` (map.tsx lines 144-151)
 
-### Mobile App
-
-- **Background:** `#dae0e0ff` (Home screen container)
-- **Tab bar background:** `#121212` (near-black dark theme), height 70px iOS / 90px Android
-- **SOS button:** `#FF3B30` (iOS red), 70x70 circle, floating center above tab bar
-- **Active tab tint:** `#fff`, inactive: `#ccc`
-- **Cards:** `#fff` with `borderRadius: 12`, `elevation: 3-4` (Material shadow)
-- **Primary blue:** `#007AFF` (iOS blue) — used for links, buttons, service icons
-- **Logout button:** `#FF3B30`
-- **Profile image border:** `#007AFF`, 2px width
-- **Info footer card:** `#007AFF` background
-- **Header title font:** `fontSize: 20, fontWeight: 'bold'`
-- **Welcome text:** `fontSize: 30, fontWeight: 'bold', color: '#fff'` (over gradient)
-- **No shared design token file** — colors are hardcoded per-file inline StyleSheet
+### Android App
+Brand palette in `AndroidApp/app/src/main/java/com/missionatlas/sevenshield/ui/theme/Color.kt`:
+- `AtlasBlue = Color(0xFF007AFF)`
+- `AtlasBlueLight = Color(0xFF5AC8FA)`
+- `AtlasBlueDark = Color(0xFF0051D6)`
+- `AtlasGreen = Color(0xFF34C759)`
+- `AtlasRed = Color(0xFFFF3B30)`
+- `AtlasOrange = Color(0xFFFF9500)`
+- `AtlasDarkBg = Color(0xFF0D0D0D)`
+- `AtlasDarkSurface = Color(0xFF1A1A2E)`
+- Light: `LightBackground = Color(0xFFF5F7FA)`, `LightPrimary = AtlasBlue`
+- Dark: `DarkBackground = Color(0xFF0D0D0D)`, `DarkPrimary = AtlasBlueLight`
+- Light `primaryContainer = Color(0xFFD6EAFF)`, dark `primaryContainer = Color(0xFF00325A)` (Theme.kt lines 17, 30)
+- `StateColors` map: e.g. Arunachal `Pair(Color(0xFF1A3A5C), Color(0xFF2D7DD2))`, Assam `Pair(Color(0xFF1A5C2A), Color(0xFF2DD27D))`
+- Material3 full dark/light theme switching via `isSystemInDarkTheme()`, status bar color synced (Theme.kt lines 48-51)
 
 ---
 
 ## 4. Current File Structure
 
 ```
-tourist-safety-app/                         (root — Web Dashboard)
-├── bloackchainConfig.js                    TYPO: should be blockchainConfig.js
-├── index.html                              Title says "React Website with Live Map"
-├── package.json
-├── package-lock.json
-├── vite.config.ts
-├── tailwind.config.js
-├── postcss.config.js
-├── eslint.config.js
-├── tsconfig.json
-├── tsconfig.app.json
-├── tsconfig.node.json
+tourist-safety-app/
+├── .gitignore
 ├── README.md
-├── PROJECT_STATUS.md                       (this file)
-├── src/
-│   ├── main.tsx                            Entry point — renders <App />
-│   ├── index.tsx                           Duplicate entry point (also renders <App />)
-│   ├── App.tsx                             Main layout — mock data, LiveMap, SafetyScore, Sidebar
-│   ├── Dashboard.tsx                       Alternate layout (stub handlers throw Error)
-│   ├── index.css                           Tailwind directives + leaflet override
-│   ├── vite-env.d.ts
-│   ├── types.ts                            Tourist, Incident, Notification interfaces
-│   ├── types/
-│   │   └── index.ts                        Duplicate types + Language + LanguageStrings
+├── PROJECT_STATUS.md
+├── shared/
+│   └── blockchainConfig.js              # Polygon Amoy ABI + contract address
+├── supabase/
+│   └── migrations/
+│       ├── 20260516000000_initial_schema.sql
+│       └── 20260516000001_anon_sos_policy.sql
+├── app/                                 # Expo React Native (tourist mobile)
+│   ├── app.json
+│   ├── package.json
+│   ├── app/
+│   │   ├── _layout.tsx                  # Root layout, renders FooterTabs
+│   │   ├── index.tsx                    # Home: NE states, AI itinerary modal
+│   │   ├── map.tsx                      # WebView Leaflet heatmap (random data)
+│   │   ├── sos.tsx                      # Hold-to-activate SOS + Supabase insert
+│   │   ├── profile.tsx                  # Hardcoded static profile data
+│   │   └── info.tsx                     # Static FAQ/tips screen
 │   ├── components/
-│   │   ├── LiveMap.tsx                     react-leaflet MapContainer, NE India center
-│   │   ├── Sidebar.tsx                     Notifications list + Add Incident form
-│   │   ├── TopBar.tsx                      Fixed header "Tourist Safety Dashboard"
-│   │   ├── SafetyScore.tsx                 Static score display widget
-│   │   ├── PanicButton.tsx                 Red PANIC button (commented out in App.tsx)
-│   │   ├── NotificationPanel.tsx           Stub with 3 hardcoded string items
-│   │   ├── IncidentForm.tsx                Standalone form (not used in App.tsx)
-│   │   ├── LanguageProvider.tsx            Stub — hardcodes language='en', no setLanguage
-│   │   └── LanguageSelector.tsx            Dropdown for 9 languages (wired to broken context)
-│   ├── data/
-│   │   └── translations.ts                 9 languages: en, hi, as, bn, mni, lus, kha, nag, brx
-│   └── hooks/
-│       └── useLanguage.ts                  LanguageContext + useLanguage + useLanguageProvider
-│
-├── node_modules/                           (excluded)
-│
-└── MobileApp/                              (Expo React Native app)
-    ├── app.json                            Expo config, owner: king_09, EAS projectId set
-    ├── package.json
-    ├── package-lock.json
-    ├── tsconfig.json
-    ├── eslint.config.js
-    ├── expo-env.d.ts
-    ├── declarations.d.ts                   declare module *.png/.jpg/.svg
-    ├── bloackchainConfig.js                SAME TYPO — copy of root blockchain config
-    ├── app/
-    │   ├── _layout.tsx                     GestureHandlerRootView + <FooterTabs />
-    │   ├── index.tsx                       Home screen — NE destinations, GPS, AI itinerary modal
-    │   ├── map.tsx                         Heatmap via WebView + Leaflet.heat
-    │   ├── sos.tsx                         PLACEHOLDER — only renders "SOS Screen" text
-    │   ├── profile.tsx                     Static hardcoded user data (Suyash Vasal Jain)
-    │   └── info.tsx                        Static how-to-use + FAQ screen
-    ├── components/
-    │   └── FooterTabs.tsx                  5-tab navigator: Home/Map/SOS/Profile/Info
-    ├── assets/
-    │   └── images/
-    │       ├── icon.jpg
-    │       ├── locationBg.png
-    │       ├── Arunachal_pradesh.jpg
-    │       ├── assam.jpg
-    │       ├── manipur.png
-    │       ├── meghalaya.png
-    │       ├── mizoram.png
-    │       ├── Nagaland.png
-    │       └── Tripura.jpg
-    ├── images/                             Duplicate/extra images folder
-    │   ├── icon.jpg
-    │   ├── loc1.png
-    │   ├── loc2.png
-    │   ├── loc3.png
-    │   └── locationBg.png
-    └── node_modules/                       (excluded)
+│   │   └── FooterTabs.tsx               # Bottom tab navigator (5 tabs)
+│   ├── lib/
+│   │   └── supabase.ts                  # Supabase client (env vars)
+│   └── assets/images/
+│       ├── icon.jpg
+│       ├── locationBg.png
+│       ├── Arunachal_pradesh.jpg
+│       ├── assam.jpg
+│       ├── manipur.png
+│       ├── meghalaya.png
+│       ├── mizoram.png
+│       ├── Nagaland.png
+│       └── Tripura.jpg
+├── dashboard/                           # Vite React TS admin web dashboard
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx                      # Core: Supabase realtime, state management
+│       ├── index.css
+│       ├── vite-env.d.ts
+│       ├── components/
+│       │   ├── TopBar.tsx
+│       │   ├── Sidebar.tsx              # Notifications list + Add Incident form
+│       │   ├── LiveMap.tsx              # React-Leaflet tourist/incident markers
+│       │   ├── IncidentForm.tsx         # Duplicate form — NOT imported anywhere
+│       │   ├── NotificationPanel.tsx    # Stub with hardcoded strings — NOT imported
+│       │   ├── PanicButton.tsx          # Fixed bottom-right PANIC button
+│       │   ├── SafetyScore.tsx          # Score banner
+│       │   ├── LanguageProvider.tsx
+│       │   └── LanguageSelector.tsx     # Built but NOT rendered anywhere
+│       ├── hooks/
+│       │   └── useLanguage.ts
+│       ├── lib/
+│       │   └── supabase.ts              # Typed Supabase client
+│       ├── types/
+│       │   ├── index.ts                 # Tourist, Incident, Notification, Language
+│       │   └── database.ts              # DB type map (5 tables)
+│       └── data/
+│           └── translations.ts          # 7 keys, 9 languages
+├── server/                              # Node.js Express backend
+│   ├── package.json
+│   ├── index.js                         # Express app, 3 route mounts + /health
+│   └── routes/
+│       ├── itinerary.js                 # POST /api/itinerary — GROQ LLaMA-3
+│       ├── sos.js                       # POST /api/sos; PATCH /:id/respond
+│       └── safety.js                    # GET /api/safety-score
+└── AndroidApp/                          # Kotlin Jetpack Compose Android app
+    ├── README_ANDROID.md
+    └── app/
+        ├── build.gradle.kts
+        ├── proguard-rules.pro
+        └── src/main/
+            ├── AndroidManifest.xml
+            └── java/com/missionatlas/sevenshield/
+                ├── MainActivity.kt
+                ├── MissionAtlasApp.kt           # @HiltAndroidApp, OSMDroid init
+                ├── di/
+                │   └── AppModule.kt             # Hilt: Supabase, Ktor, Groq
+                ├── data/
+                │   ├── model/
+                │   │   ├── Tourist.kt
+                │   │   ├── Incident.kt
+                │   │   ├── SosAlert.kt
+                │   │   └── GroqModels.kt
+                │   └── repository/
+                │       ├── SupabaseRepository.kt
+                │       └── GroqRepository.kt
+                └── ui/
+                    ├── navigation/
+                    │   └── NavGraph.kt
+                    ├── components/
+                    │   └── BottomNavBar.kt
+                    ├── theme/
+                    │   ├── Color.kt
+                    │   ├── Theme.kt
+                    │   └── Type.kt
+                    └── screens/
+                        ├── home/
+                        │   ├── HomeScreen.kt    # NE states + itinerary modal
+                        │   └── HomeViewModel.kt
+                        ├── map/
+                        │   ├── MapScreen.kt     # OSMDroid + incident overlays
+                        │   └── MapViewModel.kt
+                        ├── sos/
+                        │   ├── SosScreen.kt
+                        │   └── SosViewModel.kt
+                        ├── profile/
+                        │   ├── ProfileScreen.kt # Static defaults + blockchain chip
+                        │   └── ProfileViewModel.kt
+                        └── info/
+                            └── InfoScreen.kt    # Features + expandable FAQs
 ```
 
 ---
@@ -159,215 +222,238 @@ tourist-safety-app/                         (root — Web Dashboard)
 
 | Feature | Platform | Status | What Exists | What's Missing |
 |---------|----------|--------|-------------|----------------|
-| Home Screen / NE India Destinations | Mobile | Partial | All 7 states listed with images and 15 landmarks each; GPS location fetch; image cards with tap-to-open modal | Real images for all states present; `splash-icon.png` referenced in app.json but missing from assets |
-| AI Itinerary Planner (3-step modal) | Mobile | Broken | 3-step modal: select places, enter dates (TextInput), show result; Gemini API call wired | API endpoint is wrong (`https://api.gemini.ai/v1/completions` does not exist — should be `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`); API key hardcoded in source (security issue); response parsing uses OpenAI schema (`data.choices[0].text`) not Gemini schema |
-| SOS / Panic Button | Mobile | Placeholder | Tab exists, custom red floating button in footer | `sos.tsx` contains only `<Text>SOS Screen</Text>` — no actual SOS logic, no emergency contact call, no alert dispatch |
-| SOS / Panic Button | Web | Broken | `PanicButton.tsx` component exists, hardwired to Guwahati coords | Commented out at `App.tsx` line 79; does not actually call any emergency API |
-| Map View (heatmap) | Mobile | Partial | Leaflet heatmap rendered via WebView with 3 random zone clusters; user location shown; relocate button | Heatmap data is randomly generated — not real incident/safety data; no Supabase or API feed; react-native-maps installed but unused |
-| Profile / Digital ID | Mobile | Partial | UI renders personal info, emergency contact, medical info, preferences, security section | All data is hardcoded (`Suyash Vasal Jain`, placeholder passport `X1234567`); no Supabase auth; no blockchain Digital ID shown; no editable fields; logout button has no handler |
-| Info Screen | Mobile | Complete (static) | How-to-use steps, FAQ section, footer text | Quick Actions section commented out; content is generic placeholder |
-| Live Map | Web Dashboard | Partial | react-leaflet MapContainer centered on Guwahati (26.1445, 91.7362), tourist + incident markers with Popups, ResizeMap helper | OpenStreetMap tiles load correctly; markers use default Leaflet icons (fixed with CDN URLs); no real-time data feed; no geo-fence overlays; no heatmap |
-| Incident Management | Web Dashboard | Partial | `Sidebar.tsx` has a working Add Incident form (Title, Description, Severity, Type, Lat/Lng, ReportedBy, Status); `IncidentForm.tsx` also exists as a separate component | `onAddIncident` in `App.tsx` is `() => {}` (no-op); `Dashboard.tsx` stub throws `Error("Function not implemented.")`; `IncidentForm.tsx` is never mounted anywhere; no Supabase write |
-| Notifications Panel | Web Dashboard | Broken | `NotificationPanel.tsx` renders 3 hardcoded strings; `Sidebar.tsx` renders a proper notification list with mark-read/dismiss | `NotificationPanel.tsx` is a stub not connected to real data; `Dashboard.tsx` uses `NotificationPanel` (stub) while `App.tsx` uses `Sidebar` (actual) — two divergent implementations |
-| Safety Score | Web Dashboard | Partial | `SafetyScore.tsx` displays a score; `App.tsx` calculates average from 3 mock tourists | Score is computed from mock data only — no real algorithm, no AI, no Supabase feed |
-| AI Alerts | Web Dashboard | Not started | Not implemented | No AI alert logic anywhere in codebase |
-| Blockchain Digital ID | Both | Config only | `bloackchainConfig.js` (both root and MobileApp) contains deployed contract ABI and address `0x33985e0e572b06fd2f8324e853b29ba5e90a86d1` with `registerTourist`, `assignGuide`, `addEvidence` functions | `ethers` or `web3.js` not installed; no UI to connect wallet; no call to contract from any screen; file has a typo in filename (`bloackchain` not `blockchain`) |
-| Geo-fencing | Both | Not started | Not implemented | No geo-fence zones defined, no entry/exit detection logic |
-| AI Chatbot | Mobile | Not started | Not implemented | No chat UI or LLM integration |
-| Escalating Safety Alerts | Both | Not started | Not implemented | No alert severity escalation logic |
-| Supabase Auth | Both | Not started | SDK installed (web) | No `createClient()` call anywhere; no auth flow |
-| Supabase Realtime DB | Both | Not started | SDK installed (web) | No database queries or subscriptions |
-| Backend API | Server | Not started | No server directory | No Express/Node.js server, no Python AI service, no API routes |
-| Multi-language (Web) | Web | Broken | `translations.ts` has 9 languages; `LanguageSelector.tsx` renders dropdown; `useLanguage.ts` has working hook logic | `LanguageProvider.tsx` is a stub that hardcodes `language: 'en'` and exports a different `LanguageContext` than the one in `useLanguage.ts` — two conflicting contexts; `LanguageSelector` crashes when used because `setLanguage` does not exist on the stub context |
-| Offline Maps | Mobile | Not started | `info.tsx` mentions "Download maps for offline use" as a tip | No offline map library (e.g., `expo-file-system` + tile caching) integrated |
-| Swadeshi Booking | Both | Not started | Mentioned in README | No booking UI, no hotel database, no payment integration |
+| Home Screen / NE India Destinations | Mobile (Expo) | Complete | 7 state cards with images (index.tsx lines 62-70), `famousPlaces` map with 15 places/state, itinerary modal | — |
+| Home Screen / NE India Destinations | Android | Complete | 7 state cards with `StateColors` gradients (HomeScreen.kt lines 41-48), opens `ItineraryModal` | — |
+| AI Itinerary Planner | Mobile (Expo) | Complete | 3-step modal: select places → dates → LLaMA result; server-first + direct Groq fallback (index.tsx lines 99-156) | Dates are free-text only (no date picker) |
+| AI Itinerary Planner | Android | Complete | `HomeViewModel.generateItinerary()` → `GroqRepository.kt` Ktor call; 3-step modal in HomeScreen.kt | Dates are free-text only |
+| AI Itinerary Planner | Server | Complete | `POST /api/itinerary` uses `groq.chat.completions.create`, model llama3-8b-8192, max_tokens 2000 | — |
+| SOS / Panic Button | Mobile (Expo) | Complete | Hold 3s → `expo-location` GPS → `supabase.from('sos_alerts').insert()` (sos.tsx lines 47-81); animated ring, haptics, vibration | Anonymous insert — no user association |
+| SOS / Panic Button | Android | Complete | `SosViewModel.activateSOS()` → FusedLocationProvider → `SupabaseRepository.insertSosAlert()` (SosViewModel.kt lines 47-85); vibration both API versions | Anonymous insert |
+| SOS / Panic Button | Web Dashboard | Complete | `PanicButton.tsx` → `handlePanic()` in App.tsx inserts to `sos_alerts` (App.tsx lines 200-209) | Hardcoded lat/lng `26.1445, 91.7362` — no actual browser geolocation |
+| Map View / Safety Heatmap | Mobile (Expo) | Partial | WebView with Leaflet + `leaflet.heat` plugin; 3-zone gradient; `Relocate` button (map.tsx) | Heatmap uses `generateZones()` random data — not from DB incidents |
+| Map View / Safety Heatmap | Android | Partial | OSMDroid with `Polygon` severity circles from `supabase.getActiveIncidents()`; 60s auto-refresh (MapViewModel.kt line 49) | No heatmap layer; incident circle radius hardcoded (high=2000m); no offline tiles |
+| Profile / Digital ID | Mobile (Expo) | Broken | profile.tsx renders hardcoded static object (line 7-56: `name: 'Suyash Vasal Jain'`, `aadhar: 'xxxx-xxxx-xxxx'`) | No `supabase.from()` call; logout button has no `onPress`; no auth |
+| Profile / Digital ID | Android | Partial | `ProfileScreen.kt` renders `ProfileData` with blockchain chip showing `blockchainId`; Polygon Amoy chain info shown | `ProfileViewModel` returns only default `ProfileData()` with no Supabase fetch; no auth |
+| Info Screen / FAQ | Mobile (Expo) | Complete | 5 feature cards + 3 static FAQs (info.tsx); quick actions section commented out (lines 70-87) | No chatbot |
+| Info Screen / FAQ | Android | Complete | 6 feature cards, 8 expandable FAQ accordion items, team info card (InfoScreen.kt) | No chatbot |
+| Live Map | Web Dashboard | Complete | `LiveMap.tsx` OpenStreetMap tiles centered on Guwahati `[26.1445, 91.7362]`; tourist + incident markers with popups | No heatmap; no geofence overlay; all markers use same default Leaflet icon |
+| Incident Management | Web Dashboard | Complete | `Sidebar.tsx` add-incident form → `handleAddIncident()` inserts to `incidents`; realtime subscription active (App.tsx lines 119-147) | `IncidentForm.tsx` is a duplicate component not used (wrong default coords: New York) |
+| Notifications Panel | Web Dashboard | Partial | `Sidebar.tsx` shows live notification list from state; mark-read and dismiss work (App.tsx lines 66-77) | `NotificationPanel.tsx` stub not imported; `LanguageSelector.tsx` not rendered |
+| Safety Score Widget | Web Dashboard | Complete | `SafetyScore.tsx` displays average of all tourist `safety_score` values; live-updates on realtime (App.tsx lines 212-214) | Not using server's score formula from `safety.js` |
+| AI Alerts | All | Missing | Not implemented | — |
+| Blockchain Digital ID | All | Config only | `shared/blockchainConfig.js`: full ABI + `CONTRACT_ADDRESS = '0x33985e0e572b06fd2f8324e853b29ba5e90a86d1'` | No ethers.js/Web3.js installed; no `registerTourist()` calls; `blockchain_id` columns always null |
+| Geo-fencing | All | DB only | 14 polygons seeded in `geofences` table (migration 20260516000000); `risk_level`, `state`, `coordinates` populated | Table never queried in any app; no entry/exit detection; no overlay on any map |
+| AI Chatbot | Mobile (Expo) | Missing | info.tsx has static FAQ content | — |
+| AI Chatbot | Android | Missing | InfoScreen.kt has expandable FAQ accordion | — |
+| Escalating Safety Alerts | All | Missing | Not implemented | — |
+| Supabase Auth | All | Missing | Client configured on all platforms; `profiles` table + RLS policies in place; anon SOS policy added | No login/signup UI on any platform |
+| Supabase Realtime DB | Web Dashboard | Complete | App.tsx subscribes `tourists-realtime`, `incidents-realtime`, `sos-realtime` channels | — |
+| Supabase Realtime DB | Mobile + Android | Missing | Neither platform subscribes to any realtime channel | — |
+| Backend API | Server | Complete | 3 routes functional; `/health` endpoint | Only runs on localhost:3001; no auth middleware; no rate limiting; no deployment |
+| Offline Maps | Mobile | Missing | expo-location installed; info.tsx step 4 mentions offline | No tile download or caching |
+| Offline Maps | Android | Missing | OSMDroid supports offline natively | No offline tile management UI or download flow |
+| Swadeshi Booking | All | Missing | README lists as Shield 4 | No implementation on any platform |
 
 ---
 
 ## 6. What's Working Right Now
 
-1. **Web Dashboard renders** — `npm run dev` in root launches the Vite dev server. The App layout (TopBar + Sidebar + LiveMap + SafetyScore) displays correctly with mock data.
-2. **Live Map (web)** — react-leaflet renders an OpenStreetMap centered on Guwahati with 3 tourist markers and 2 incident markers. Leaflet icon fix is correctly applied. Map tiles load from CDN.
-3. **Add Incident form (Sidebar)** — The form in `Sidebar.tsx` is visually complete with all fields (Title, Description, Severity, Type, Lat/Lng, ReportedBy, Status) and renders without errors. Submission is silently swallowed (`onAddIncident` is `() => {}`).
-4. **Mobile app launches** — `expo start` in MobileApp works. The 5-tab navigation renders with the custom dark tab bar and floating red SOS button.
-5. **Home screen — NE India destinations** — All 7 states (Arunachal Pradesh, Assam, Manipur, Meghalaya, Mizoram, Nagaland, Tripura) display with images. Each card opens a 3-step modal.
-6. **GPS location fetch (mobile)** — `expo-location` correctly requests foreground permission and reverse-geocodes the user's city on Home screen load. Also used in Map tab.
-7. **Heatmap map (mobile)** — `map.tsx` renders Leaflet.heat inside a WebView with 3 random safety zones and a relocate button. Visually functional with generated (fake) data.
-8. **Profile screen (mobile)** — Renders a complete-looking profile with personal, emergency contact, medical, preferences, and security sections.
-9. **Info screen (mobile)** — Static how-to-use guide and FAQ renders fully.
-10. **Blockchain contract ABI** — A real Solidity contract ABI is defined with `registerTourist`, `assignGuide`, `addEvidence` functions and corresponding events. The contract address is present (testnet).
-11. **Translations data** — `translations.ts` defines 9 Northeast Indian languages for 7 UI keys. Structure is correct and extensible.
+1. **Web Dashboard** — fully runnable with `npm run dev` in `dashboard/`; loads live Supabase data; realtime on all 3 tables; add-incident form writes to DB; panic button inserts SOS; safety score widget live-updates.
+2. **Expo Mobile SOS** — `sos.tsx` fully functional: 3-second hold + animated ring + haptics + vibration; GPS via `expo-location`; `supabase.from('sos_alerts').insert()` with coordinates displayed after send; call 112/108 buttons.
+3. **Android SOS** — `SosViewModel.kt` + `SosScreen.kt` fully functional: Compose hold animation, FusedLocationProvider, `SupabaseRepository.insertSosAlert()`, vibration for API 26+/31+; error + sent states handled.
+4. **Expo AI Itinerary** — 3-step modal in `index.tsx`: tries `${SERVER_URL}/api/itinerary` first, falls back to direct Groq fetch with `EXPO_PUBLIC_GROQ_API_KEY`; renders formatted itinerary text.
+5. **Android AI Itinerary** — `HomeViewModel.generateItinerary()` → `GroqRepository.kt` Ktor POST to Groq; full 3-step modal UI with loading indicator showing "Generating with LLaMA…".
+6. **Server itinerary route** — `POST /api/itinerary` uses `groq-sdk` with `llama3-8b-8192`, max_tokens 2000; returns `{ itinerary: string }`.
+7. **Server SOS route** — `POST /api/sos` with service-role key inserts bypassing RLS; `PATCH /api/sos/:id/respond` marks `responded_at`.
+8. **Server safety-score route** — `GET /api/safety-score` computes score (high=-15, medium=-8, low=-3, SOS=-20), returns per-NE-state breakdown.
+9. **Android Map** — `MapScreen.kt` OSMDroid loads, fetches active incidents from Supabase, draws severity-colored circle polygons (red/orange/green), auto-refreshes 60s.
+10. **Expo Home Screen** — 7 NE India state cards with actual photos; 15 famous places per state; multi-step itinerary modal with step indicator.
+11. **Database schema** — 5 tables with RLS; 14 NE India geofence polygons seeded; anon SOS+incident insert policy applied; `updated_at` triggers on `profiles` and `incidents`.
+12. **Blockchain config** — Full ABI (4 functions, 4 events) for `registerTourist`, `addEvidence`, `assignGuide`, `getEvidence` in `shared/blockchainConfig.js`; contract deployed on Polygon Amoy.
+13. **Multi-language infrastructure** — `useLanguage` hook, `LanguageProvider`, `LanguageSelector` component for 9 NE India languages built; translations.ts has 7 keys.
 
 ---
 
 ## 7. What's Broken / Incomplete
 
-1. **`bloackchainConfig.js` filename typo** — File at root and at `MobileApp/bloackchainConfig.js` is named with a typo (`bloackchain`). The README documents it as `blockchainConfig.js`. Any import using the correct spelling will fail.
+1. **`app/app/profile.tsx` — fully hardcoded** — The `user` object (lines 7-56) has static data including `name: 'Suyash Vasal Jain'`, `aadhar: 'xxxx-xxxx-xxxx'`, `passport: 'X1234567'`. There is no `supabase.from()` call. The `Logout` `TouchableOpacity` on line 128 has no `onPress` handler — tapping it does nothing.
 
-2. **Gemini API endpoint is wrong** (`MobileApp/app/index.tsx`, line 196) — `https://api.gemini.ai/v1/completions` is not a real endpoint. The correct Google Generative AI endpoint is `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`. The response is also parsed using OpenAI schema (`data.choices[0].text`) — Gemini returns `data.candidates[0].content.parts[0].text`.
+2. **Android `ProfileViewModel.kt` — no Supabase fetch** — Constructor is `@Inject constructor()` with no dependencies; `_profile` always emits default `ProfileData()` (line 23-25). `blockchainId` and `walletAddress` are always `null`.
 
-3. **API key hardcoded in source** (`MobileApp/app/index.tsx`, line 13) — `const GEMINI_API_KEY = 'AIzaSyBAJbubgfm6dHQgYMRxSAMl9JfiFXrL9oY'` is committed to source. This key will be scraped and abused. Must be moved to an environment variable or a backend proxy.
+3. **Expo map heatmap is random data** — `generateZones()` in `map.tsx` (line 55) creates 30 random `[lat, lng, intensity]` tuples. Not connected to `incidents` or `geofences` tables.
 
-4. **`LanguageProvider.tsx` is a broken stub** (`src/components/LanguageProvider.tsx`) — It creates its own `LanguageContext` with only `{ language: 'en' }` and no `setLanguage` or `t` function. `useLanguage.ts` exports a completely different `LanguageContext`. Components like `IncidentForm.tsx` and `LanguageSelector.tsx` that call `useLanguage()` will throw `"useLanguage must be used within a LanguageProvider"` at runtime because they get the wrong context.
+4. **`tailwind.config.js` deleted** — Git status shows `D tailwind.config.js`. The dashboard's Tailwind runs without a content configuration, meaning all classes are included (no purging) and classes not in the default set won't be recognized. A `dashboard/tailwind.config.js` is needed.
 
-5. **Duplicate entry points** (`src/main.tsx` and `src/index.tsx`) — Both files render `<App />` to `#root`. Only `main.tsx` is referenced by `index.html`. `src/index.tsx` is dead code.
+5. **`LanguageSelector.tsx` is never rendered** — Fully built component at `dashboard/src/components/LanguageSelector.tsx` supports 9 languages but is not imported by `TopBar.tsx` or `App.tsx`.
 
-6. **Duplicate type definitions** (`src/types.ts` and `src/types/index.ts`) — `Tourist`, `Incident`, `Notification` are defined twice. `types/index.ts` adds an `'info'` variant to `Incident.type` and `Notification.type` that `types.ts` lacks. `Dashboard.tsx` imports from `./types` which resolves to `types.ts`, creating potential type mismatches.
+6. **`NotificationPanel.tsx` is a dead stub** — Contains hardcoded text `"New tourist alert near Central Park"`. Not imported by any component. Should be deleted or replaced.
 
-7. **`Dashboard.tsx` is non-functional** — All three handler props throw `new Error("Function not implemented.")`. This file is imported nowhere in `main.tsx` or `App.tsx`. It exists as dead code.
+7. **`IncidentForm.tsx` is a duplicate** — Standalone form component at `dashboard/src/components/IncidentForm.tsx` is not used (App.tsx delegates to `Sidebar.tsx`'s embedded form). Default location is New York (`lat: 40.7128, lng: -74.0060`) — wrong context for NE India.
 
-8. **`PanicButton` commented out** (`src/App.tsx` line 79) — The component import exists and the `handlePanic` logic is correct, but the rendered `<PanicButton />` tag is commented out.
+8. **No authentication UI on any platform** — `profiles` table, RLS policies, and Supabase Auth modules are all in place, but there is no login/signup screen. Dashboard passes `userName="Admin"` as a hardcoded string (App.tsx line 219). Because `tourists_select_all` policy requires `authenticated`, the dashboard may receive empty tourist data with just the anon key.
 
-9. **`NotificationPanel.tsx` is a stub** — Renders three hardcoded strings with no props. It is used in `Dashboard.tsx` (dead code) but not in the active `App.tsx` flow.
+9. **Blockchain integration is config-only** — No platform has ethers.js or web3.js. `registerTourist()`, `addEvidence()` are never called. `blockchain_id` in `profiles`, `tourists`, `incidents.blockchain_hash`, and `sos_alerts.blockchain_hash` are always null.
 
-10. **`IncidentForm.tsx` is unused** — A fully built incident form component exists in `src/components/IncidentForm.tsx` but is mounted nowhere. `Sidebar.tsx` has its own inline incident form instead.
+10. **Geo-fencing is DB-only** — `geofences` table has 14 polygons but is never queried by any app code. No entry/exit detection, no alert, no map overlay.
 
-11. **No Supabase integration** — `@supabase/supabase-js` is in `package.json` but `createClient` is never called. No `.env` file for `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` exists.
+11. **Server not deployed** — Runs only on `localhost:3001`. The Expo app's `EXPO_PUBLIC_SERVER_URL` defaults to `http://localhost:3001` which fails on physical devices. Android does not use the server at all.
 
-12. **No backend exists** — No `server/`, `backend/`, or `api/` directory. The system depends entirely on Supabase as a backend but that is also not integrated.
+12. **`EXPO_PUBLIC_GROQ_API_KEY` exposed client-side** — `index.tsx` line 14 reads this env var which Expo bundles into the JS bundle. Any user can extract it from the APK.
 
-13. **`ethers` not installed** — The blockchain config defines a deployed contract but `ethers` (or `web3.js`) is not in any `package.json`. No wallet connection UI exists anywhere.
+13. **`app/app/_layout.tsx` navigation mismatch** — The file imports `FooterTabs` which uses `createBottomTabNavigator` from `@react-navigation/bottom-tabs` inside an expo-router `_layout.tsx`. Expo Router expects its own `<Tabs>` component. This architectural mismatch may produce navigation conflicts in expo-router 6.
 
-14. **SOS screen is a placeholder** (`MobileApp/app/sos.tsx`) — Contains only `<Text>SOS Screen</Text>`. No actual SOS logic.
+14. **`uuid` installed but unused** — `uuid` 13.0.0 in dashboard `dependencies` is not imported in any source file.
 
-15. **Profile data is hardcoded** (`MobileApp/app/profile.tsx`) — Name, Aadhar, passport, emergency contact are developer's personal placeholder data. There is no edit capability and no authentication.
+15. **`react-native-maps` installed but unused** — Expo app installs `react-native-maps` 1.20.1 + types, but `map.tsx` uses WebView + Leaflet HTML instead.
 
-16. **`splash-icon.png` missing** — `app.json` references `./assets/images/splash-icon.png` in the expo-splash-screen plugin config but this file does not exist in `MobileApp/assets/images/`. Build will fail or show a broken splash.
-
-17. **`react-native-maps` installed but unused** — `MobileApp/package.json` includes `react-native-maps@1.20.1` and `@types/react-native-maps` but the map screen uses WebView + Leaflet instead. This is dead weight and requires extra native build config.
-
-18. **Extraneous packages in MobileApp** — `npm list` shows `html-parse-stringify`, `i18next`, `react-i18next`, and `void-elements` as extraneous (installed but not in `package.json`). Run `npm prune` to clean.
-
-19. **`index.html` title is generic** — The browser tab reads "React Website with Live Map" instead of anything related to Mission Atlas or SevenShield.
-
-20. **Duplicate `bloackchainConfig.js`** — The same blockchain config file exists at both root (`/bloackchainConfig.js`) and `/MobileApp/bloackchainConfig.js`. There should be one canonical source.
+16. **Duplicate problem statement IDs** — `README.md` line 4 references `SIH25137`; `AndroidApp/InfoScreen.kt` line 72 references `SIH25002`. Needs clarification.
 
 ---
 
 ## 8. Dependencies Status
 
-### Web Dashboard (root `package.json`)
+### Web Dashboard (dashboard/package.json)
+| Package | Required | Installed | Status |
+|---------|----------|-----------|--------|
+| react | ^18.3.1 | 18.3.1 | OK |
+| react-dom | ^18.3.1 | 18.3.1 | OK |
+| @supabase/supabase-js | ^2.57.4 | 2.57.4 | OK |
+| leaflet | ^1.9.4 | 1.9.4 | OK |
+| react-leaflet | ^4.2.1 | 4.2.1 | OK |
+| @types/leaflet | ^1.9.20 | 1.9.20 | OK |
+| @heroicons/react | ^2.2.0 | 2.2.0 | OK |
+| lucide-react | ^0.344.0 | 0.344.0 | Installed (excluded from Vite optimize); not used in any component |
+| tailwindcss | ^3.4.17 | 3.4.17 | OK (no tailwind.config.js) |
+| uuid | ^13.0.0 | 13.0.0 | Installed but not imported anywhere |
+| vite | ^5.4.2 | 5.4.8 | OK |
+| typescript | ^5.5.3 | 5.6.3 | OK |
+| ethers.js / web3.js | Needed for blockchain | NOT installed | Missing |
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| react | 18.3.1 | OK |
-| react-dom | 18.3.1 | OK |
-| vite | 5.4.8 | OK |
-| typescript | 5.6.3 | OK |
-| tailwindcss | 3.4.17 | OK |
-| leaflet | 1.9.4 | OK — used |
-| react-leaflet | 4.2.1 | OK — used |
-| @types/leaflet | 1.9.20 | OK |
-| @supabase/supabase-js | 2.57.4 | Installed, never imported |
-| @heroicons/react | 2.2.0 | Used in `IncidentForm.tsx` only |
-| lucide-react | 0.344.0 | Installed, not used in any source file |
-| uuid | 13.0.0 | Used in `App.tsx` for incident IDs |
-| ethers / web3 | **NOT INSTALLED** | Required for blockchain integration |
+### Mobile App (app/package.json)
+| Package | Required | Installed | Status |
+|---------|----------|-----------|--------|
+| expo | ~54.0.7 | 54.0.7 | OK |
+| expo-router | ~6.0.4 | 6.0.4 | OK |
+| @supabase/supabase-js | ^2.105.4 | 2.105.4 | OK |
+| expo-location | ~19.0.7 | 19.0.7 | OK |
+| expo-haptics | ~15.0.7 | 15.0.7 | OK |
+| react-native-maps | 1.20.1 | 1.20.1 | Installed; NOT used (map.tsx uses WebView) |
+| react-native-webview | 13.15.0 | 13.15.0 | OK — used in map.tsx |
+| @react-navigation/bottom-tabs | ^7.4.7 | 7.4.7 | OK — used in FooterTabs.tsx |
+| expo-linear-gradient | ~15.0.7 | 15.0.7 | OK |
+| expo-dev-client | ~6.0.21 | 6.0.21 | OK |
+| ethers.js | Needed for blockchain | NOT installed | Missing |
 
-### Mobile App (`MobileApp/package.json`)
+### Android App (AndroidApp/app/build.gradle.kts)
+| Dependency | Version | Notes |
+|------------|---------|-------|
+| Compose BOM | 2024.02.00 | OK |
+| material3 | via BOM | OK |
+| navigation-compose | 2.7.7 | OK |
+| hilt-android | 2.50 | OK |
+| hilt-navigation-compose | 1.1.0 | OK |
+| supabase BOM | 2.1.4 | OK |
+| postgrest-kt | via BOM | OK — used in SupabaseRepository |
+| realtime-kt | via BOM | Installed in AppModule; no channel subscriptions in code |
+| auth-kt | via BOM | Installed in AppModule; no login flow implemented |
+| ktor-client-android | 2.3.7 | OK — used in GroqRepository |
+| osmdroid-android | 6.1.18 | OK — used in MapScreen |
+| play-services-location | 21.1.0 | OK — used in SosViewModel + MapViewModel |
+| accompanist-permissions | 0.34.0 | OK — used in SosScreen + MapScreen |
+| coil-compose | 2.5.0 | Installed; profile image area uses Icon placeholder instead |
+| datastore-preferences | 1.0.0 | Installed; not used in any source file |
+| ui-text-google-fonts | 1.6.1 | Installed; no custom font applied in Type.kt |
+| minSdk | 26 | Android 8.0+ only |
+| compileSdk / targetSdk | 34 | OK |
+| kotlinCompilerExtensionVersion | 1.5.10 | OK for Compose BOM 2024.02 |
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| expo | 54.0.7 | OK |
-| react | 19.1.0 | OK (note: React 19 — newer than web's React 18) |
-| react-native | 0.81.4 | OK |
-| expo-router | 6.0.4 | OK — used for navigation |
-| expo-location | 19.0.7 | OK — used in Home + Map |
-| expo-linear-gradient | 15.0.7 | OK — used in Home header |
-| @expo/vector-icons | 15.0.2 | OK — Ionicons, MaterialIcons, FontAwesome5 used |
-| @react-navigation/bottom-tabs | 7.4.7 | OK — used in FooterTabs |
-| react-native-webview | 13.15.0 | OK — used in Map screen |
-| react-native-gesture-handler | 2.28.0 | OK — used in _layout |
-| react-native-maps | 1.20.1 | Installed, **not used** |
-| expo-haptics | 15.0.7 | Installed, not used |
-| expo-symbols | 1.0.7 | Installed, not used |
-| i18next | 25.5.2 | Extraneous (not in package.json) |
-| react-i18next | 15.7.3 | Extraneous (not in package.json) |
-| html-parse-stringify | 3.0.1 | Extraneous |
-| void-elements | 3.1.0 | Extraneous |
-| ethers / web3 | **NOT INSTALLED** | Required for blockchain integration |
-| @supabase/supabase-js | **NOT INSTALLED** | Required for auth + database on mobile |
+### Server (server/package.json)
+| Package | Version | Status |
+|---------|---------|--------|
+| express | 4.22.2 | OK |
+| cors | 2.8.6 | OK |
+| dotenv | 16.6.1 | OK |
+| @supabase/supabase-js | 2.105.4 | OK |
+| groq-sdk | 0.9.1 | OK |
+| type="module" | ESM | Requires Node ≥14; all routes use `import`/`export` |
 
 ---
 
 ## 9. Remaining Work (Priority Order)
 
-1. **[M] Fix Gemini API integration** — Correct the endpoint URL in `MobileApp/app/index.tsx` to `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent` and update the request/response schema. Move the API key to an environment variable or backend proxy. The itinerary planner is a core demo feature.
+1. **[M] Implement Supabase Auth on all platforms** — Login/signup screens needed on Expo (new `app/app/login.tsx`), Android (new `LoginScreen.kt`), and dashboard (admin login form). Without auth, `profiles` RLS blocks reads/writes and `tourists_select_all` blocks dashboard queries for the anon role.
 
-2. **[S] Fix `LanguageProvider.tsx`** — Replace the stub in `src/components/LanguageProvider.tsx` with a real provider that uses `useLanguageProvider()` from `src/hooks/useLanguage.ts` and supplies the correct context (`language`, `setLanguage`, `t`). This unblocks all multilingual features.
+2. **[M] Wire profile.tsx to Supabase** — Replace hardcoded `user` object in `app/app/profile.tsx` with `supabase.from('profiles').select()`. Add `onPress={() => supabase.auth.signOut()}` to the Logout button. Map `profiles` columns to displayed fields.
 
-3. **[M] Implement SOS screen** (`MobileApp/app/sos.tsx`) — Build the actual SOS/panic UI: emergency contact call via `Linking.openURL('tel:...')`, GPS capture, optional Supabase incident write, SMS/notification trigger. This is a core SIH demo feature.
+3. **[M] Wire Android ProfileViewModel to Supabase** — Inject `SupabaseRepository` into `ProfileViewModel.kt`. Add a `getProfile(userId)` method in `SupabaseRepository.kt` fetching from `profiles`. Expose result as `StateFlow<ProfileData>`.
 
-4. **[S] Fix the PanicButton on web** — Uncomment the `<PanicButton />` in `src/App.tsx` line 79 and wire `handlePanic` to actually write an incident to state (the logic is already correct).
+4. **[M] Fix Expo map heatmap with real data** — In `map.tsx`, add `useEffect` to call `supabase.from('incidents').select('latitude,longitude,severity').eq('status','active')`. Convert to `[lat, lng, intensity]` tuples (high=1.0, medium=0.6, low=0.2) and replace `generateZones()`.
 
-5. **[M] Connect Supabase (web dashboard)** — Create `src/lib/supabase.ts` with `createClient()`, add a `.env` file for `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, and replace mock data in `App.tsx` with real `supabase.from('tourists').select()` and `supabase.from('incidents').select()` calls. Add realtime subscription for live updates.
+5. **[S] Recreate `dashboard/tailwind.config.js`** — Quick fix: create `dashboard/tailwind.config.js` with `content: ['./index.html', './src/**/*.{ts,tsx}']`. Unblocks production `npm run build` with proper purging.
 
-6. **[M] Connect Supabase (mobile)** — Install `@supabase/supabase-js` in MobileApp, add auth flow (login/register screen), and replace hardcoded profile data with real user data from Supabase.
+6. **[S] Add `LanguageSelector` to TopBar** — Add `import LanguageSelector from './LanguageSelector'` and render it in `dashboard/src/components/TopBar.tsx`. One-line change; component is fully built.
 
-7. **[M] Implement blockchain Digital ID UI** — Install `ethers` in both packages, rename `bloackchainConfig.js` to `blockchainConfig.js` everywhere, build a wallet-connect screen (MetaMask via WalletConnect or Expo Web3 modal), and add `registerTourist()` call on signup. Show the Digital ID on the Profile screen.
+7. **[L] Implement geo-fence monitoring** — Query `geofences` table on all platforms. Use a point-in-polygon algorithm on GPS coordinates. Trigger local notification on zone entry/exit. Display polygons on LiveMap.tsx (react-leaflet `Polygon`), map.tsx WebView, and Android MapScreen.kt (OSMDroid `Polygon`).
 
-8. **[L] Build backend/server** — Create `server/` directory with Node.js + Express. Minimum routes: `POST /api/sos` (creates Supabase incident + notifies contacts), `GET /api/safety-score` (calculates score from incident data). Add Python AI service for alert classification.
+8. **[L] Blockchain integration** — Install ethers.js in `app/` and `dashboard/`. Use `shared/blockchainConfig.js` contract address + ABI. Call `registerTourist(idHash, expiry, guideIdHash)` during profile creation. Store returned `blockchain_id` in Supabase `profiles.blockchain_id`. Wire Android `ProfileScreen`'s blockchain chip to real value.
 
-9. **[M] Implement geo-fencing** — Define geo-fence polygons for sensitive NE India tourist zones. On mobile, use `expo-location`'s `watchPositionAsync` + turf.js or manual distance check. Trigger blockchain ID verification on zone entry.
+9. **[M] Deploy server** — Deploy `server/` to Railway/Render/Fly.io. Set `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`. Update `EXPO_PUBLIC_SERVER_URL` in Expo `.env`. Remove `EXPO_PUBLIC_GROQ_API_KEY` from Expo client once server is reliable.
 
-10. **[M] Fix Profile screen** — Replace hardcoded data with Supabase auth user. Add edit functionality. Show blockchain Digital ID (contract address + expiry from `registerTourist`).
+10. **[S] Remove dead code** — Delete `NotificationPanel.tsx` (stub, not imported). Delete `IncidentForm.tsx` (duplicate, wrong coordinates). Remove `uuid` from `dashboard/package.json` dependencies.
 
-11. **[S] Fix `splash-icon.png` missing** — Add `MobileApp/assets/images/splash-icon.png` or update `app.json` to point to an existing image to prevent build failure.
+11. **[L] Offline map tile caching** — Expo: implement tile prefetch using `expo-file-system` or switch from WebView to `react-native-maps` with MapLibre offline. Android: implement OSMDroid offline tile download and cache management UI.
 
-12. **[S] Clean up dead code** — Delete `src/Dashboard.tsx` (or wire it up), remove `src/index.tsx` duplicate entry, consolidate `src/types.ts` and `src/types/index.ts` into one file, run `npm prune` in MobileApp.
+12. **[L] Swadeshi Booking** — No implementation exists anywhere. Requires local business database schema, booking flow, payment integration, and UI on all platforms.
 
-13. **[S] Rename typo file** — Rename `bloackchainConfig.js` to `blockchainConfig.js` at both root and `MobileApp/`. Update any imports.
+13. **[S] Fix Expo navigation architecture** — Refactor `_layout.tsx` to use `expo-router`'s `<Tabs>` with individual screen files, or validate the current `@react-navigation/bottom-tabs` approach works correctly under expo-router 6.
 
-14. **[M] Implement offline maps** — Integrate `expo-file-system` + a tile caching strategy (e.g., `expo-sqlite` for tile index) so NE India map tiles work without network.
-
-15. **[L] AI Chatbot** — Build an in-app chat UI (new tab or modal) backed by Gemini API (via backend proxy) for tourist safety Q&A.
-
-16. **[S] Fix `index.html` title** — Change `<title>React Website with Live Map</title>` to `Mission Atlas — SevenShield` or similar.
+14. **[S] Add Supabase Realtime to mobile apps** — Add `supabase.channel('sos-realtime')` subscriptions in Expo `sos.tsx` and Android `SosViewModel.kt` to reflect live incident updates without manual refresh.
 
 ---
 
 ## 10. Next Steps (Immediate Actions)
 
-The following can be done right now without any new accounts or infrastructure:
+1. **Create `dashboard/tailwind.config.js`** with content scanning enabled — prevents build issues and enables production purging. Run `npm run build` in `dashboard/` to verify.
 
-1. **Fix Gemini itinerary** — In `MobileApp/app/index.tsx` lines 196-210: change the URL to `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, change the body to `{ contents: [{ parts: [{ text: prompt }] }] }`, change the response parse to `data.candidates[0].content.parts[0].text`. This makes the AI itinerary actually work for the demo.
+2. **Add `LanguageSelector` to `dashboard/src/components/TopBar.tsx`** — import and render it next to the `Hello, {userName}` div. One-line change.
 
-2. **Uncomment PanicButton on web** — Remove the comment markers around `{/* <PanicButton onPanic={handlePanic} /> */}` at `src/App.tsx` line 79. The handler and component are already correct.
+3. **Create `app/app/login.tsx`** — Email/password form calling `supabase.auth.signInWithPassword()`. Add a session check in `_layout.tsx` to redirect unauthenticated users to login.
 
-3. **Fix LanguageProvider** — Replace the body of `src/components/LanguageProvider.tsx` to use `useLanguageProvider()` and provide `LanguageContext` from `src/hooks/useLanguage.ts`.
+4. **Replace hardcoded data in `app/app/profile.tsx`** — After auth: `const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()`. Map fields. Add `onPress={() => supabase.auth.signOut()}` to the Logout button.
 
-4. **Create `.env` file at root** — Add `VITE_SUPABASE_URL=` and `VITE_SUPABASE_ANON_KEY=` placeholders (fill from Supabase project settings). Create `src/lib/supabase.ts` with `createClient`. At minimum, write mock tourists/incidents to Supabase so the dashboard reads live data.
+5. **Fix Expo map heatmap** — In `app/app/map.tsx`, add:
+   ```js
+   const { data } = await supabase.from('incidents').select('latitude,longitude,severity').eq('status','active');
+   const points = data.map(i => [i.latitude, i.longitude, i.severity === 'high' ? 1.0 : i.severity === 'medium' ? 0.6 : 0.2]);
+   ```
+   Replace the `generateZones()` call with `JSON.stringify(points)` in the HTML template.
 
-5. **Fix splash icon** — Create or copy an existing image to `MobileApp/assets/images/splash-icon.png`.
+6. **Create `dashboard/tailwind.config.js`** — Remove `uuid` from `dashboard/package.json` and `lucide-react` from `vite.config.ts` excludeOptimizeDeps if unused.
 
-6. **Rename blockchain config** — `git mv bloackchainConfig.js blockchainConfig.js` at root; same in MobileApp. Update the README accordingly.
+7. **Inject `SupabaseRepository` in Android `ProfileViewModel.kt`** — Add constructor parameter, call `supabaseRepository.getTourists()` pattern, create `getProfile()` in `SupabaseRepository.kt`.
 
-7. **Wire SOS screen** — Replace `MobileApp/app/sos.tsx` with a screen that shows a large SOS button, captures GPS via `expo-location`, and calls `Linking.openURL('tel:112')` for emergency services. Even a hardcoded call is better than a blank placeholder for the demo.
+8. **Deploy `server/` to Railway** — `railway init` in `server/`, set env vars, push. Update `EXPO_PUBLIC_SERVER_URL` in `app/.env`.
+
+9. **End-to-end SOS test** — Start server + Expo + dashboard simultaneously. Trigger SOS on mobile and verify dashboard shows the alert in realtime in the Notifications sidebar and as a red incident marker on LiveMap.
+
+10. **Seed test data into Supabase `tourists` table** — Insert a test tourist row with `latitude`, `longitude`, `safety_score`, `status='safe'` to verify dashboard LiveMap shows a tourist marker.
 
 ---
 
 ## 11. Architecture Notes
 
-### Two Divergent Implementations in Web
+**Data flow:** All four platforms write to the same Supabase project. The web dashboard reads from `tourists` and `incidents` with Supabase JS realtime subscriptions. The Expo and Android apps write to `sos_alerts` (SOS) and indirectly through the server to `incidents`. The server provides a GROQ proxy and computed safety score — it is NOT required for SOS or map features.
 
-`App.tsx` and `Dashboard.tsx` represent two separate attempts at the same dashboard layout. `App.tsx` is the active entry point (mounted by `main.tsx`). `Dashboard.tsx` uses `NotificationPanel` (stub), `SafetyScore(score=0)`, and `LiveMap(tourists=[], incidents=[])` with unimplemented handlers. These should be reconciled into one file.
+**Two parallel mobile platforms:** The Expo app (`app/`) and Android native app (`AndroidApp/`) implement identical feature sets. Both have the same 5 screens, same 7 NE states, same itinerary flow, same Supabase tables. They share zero code. The Android app has a more robust architecture (Hilt DI, ViewModel + Repository pattern, typed Supabase models with `@Serializable`). The Expo app has actual state images and a more polished home screen visually. For the SIH demo, decide which is the primary demo target.
 
-### Type System Inconsistency
+**Blockchain gap:** The smart contract is deployed on Polygon Amoy testnet (`0x33985e0e572b06fd2f8324e853b29ba5e90a86d1`). The ABI includes `registerTourist`, `addEvidence`, `assignGuide`, and `getEvidence`. No platform installs ethers.js. No on-chain transaction is ever made. `blockchain_id` fields in DB are always null. This is the largest gap between stated SIH goals and current code.
 
-`src/types.ts` (used by `App.tsx`) and `src/types/index.ts` (used by `Dashboard.tsx`, `IncidentForm.tsx`, `useLanguage.ts`) differ: `types/index.ts` adds `'info'` to the union types and adds `Language` + `LanguageStrings`. TypeScript will not catch cross-import issues because both files define the same interface names. All types should be consolidated into `src/types/index.ts` and `src/types.ts` deleted.
+**RLS policy issue:** The `tourists_select_all` policy (migration 20260516000000, line 103) grants SELECT only to `authenticated` role. The dashboard's Supabase client uses the anon key with no session. This means `supabase.from('tourists').select()` in `App.tsx` will return an empty array unless a user is authenticated. Add either an anon SELECT policy on `tourists` or configure the dashboard to use the service role key (not recommended for client-side).
 
-### Mobile Navigation Architecture
+**`realtime-kt` installed but unused in Android:** The Android `AppModule.kt` installs `Realtime` in the Supabase client, but no screen subscribes to any channel. If realtime support is added, it's already configured in the DI.
 
-The mobile app uses expo-router v6 (file-based routing) but bypasses it — `_layout.tsx` directly renders `<FooterTabs />` which is a `@react-navigation/bottom-tabs` navigator that manually imports each screen. This is redundant: expo-router's tab layout could replace `FooterTabs.tsx` entirely, or the app could drop expo-router and use pure React Navigation. Currently both are installed and potentially conflicting.
+**`datastore-preferences` installed but unused in Android:** Added as a dependency in `build.gradle.kts` line 113 but never imported. Likely intended for storing user preferences or cached profile data offline.
 
-### Blockchain Config Duplication
+**Server ESM format:** `server/package.json` has `"type": "module"`. All route files use `import`/`export`. The dev script is `node --watch index.js` (Node.js built-in file watcher, no nodemon needed). No TypeScript in the server.
 
-The identical `bloackchainConfig.js` file exists at both the web root and inside `MobileApp/`. There should be one source of truth (e.g., a shared `packages/` monorepo structure, or the web root version imported relatively). The contract address `0x33985e0e572b06fd2f8324e853b29ba5e90a86d1` appears to be deployed on a testnet (likely Polygon Mumbai or Sepolia based on the project description) — the network is not documented in the config.
-
-### No Environment Variable Management
-
-There are no `.env` files anywhere. The Gemini API key is hardcoded in source code. Supabase credentials have not been added. Before any real deployment or even a demo with live features, a `.env` + `.env.example` setup is needed for both the web root and `MobileApp/`.
-
-### Heatmap Uses Fake Data
-
-`MobileApp/app/map.tsx` generates random safety zones using `Math.random()` centered on the user's GPS coordinates. This gives a visually impressive heatmap but communicates false safety information. For the SIH demo, these zones should either come from Supabase incident data or at minimum use predetermined fixed coordinates around known NE India areas.
+**Problem statement ID discrepancy:** `README.md` line 4 cites `SIH25137`; `AndroidApp/InfoScreen.kt` line 72 and the task brief cite `SIH25002`. Clarify and make consistent across all documentation before the hackathon demo.

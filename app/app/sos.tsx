@@ -6,7 +6,7 @@ import {
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 const HOLD_DURATION = 3000; // ms to hold before activating
 
