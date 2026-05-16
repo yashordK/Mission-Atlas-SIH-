@@ -1,0 +1,18 @@
+{
+  "name": "mission-atlas-server",
+  "version": "1.0.0",
+  "description": "Mission Atlas backend — Express + Groq + Supabase",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "groq-sdk": "^0.9.1"
+  }
+}

@@ -1,15 +1,14 @@
-// src/components/LanguageProvider.tsx
-import React, { createContext, ReactNode } from 'react';
-
-export const LanguageContext = createContext({ language: 'en' });
+import React, { ReactNode } from 'react';
+import { LanguageContext, useLanguageProvider } from '../hooks/useLanguage';
 
 interface Props {
   children: ReactNode;
 }
 
 export const LanguageProvider: React.FC<Props> = ({ children }) => {
+  const value = useLanguageProvider();
   return (
-    <LanguageContext.Provider value={{ language: 'en' }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
